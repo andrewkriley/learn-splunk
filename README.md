@@ -1,4 +1,4 @@
-# Splunk Learn Forwarding
+# Learn Splunk
 
 A local, practical Splunk learning lab for getting data in.
 
@@ -8,9 +8,10 @@ This project walks through a full forwarding topology:
 - Splunk Enterprise deployment server, now called agent management in Splunk 10.x docs
 - Splunk Enterprise heavy forwarder
 - Splunk Universal Forwarders for both `UF -> Indexer` and `UF -> Heavy Forwarder -> Indexer`
-- File, TCP, and UDP data source examples
+- File, TCP, UDP, JSON, XML, OpenTelemetry-style JSON, HEC, scripted, masked PII, and Buttercup Games app data source examples
 - Deployment apps, server classes, and the core `inputs.conf`, `outputs.conf`, `props.conf`, and `serverclass.conf` files
 - Small file and network event generators so searches return real events
+- A local Splunk MCP server for AI-assisted SPL validation, index inspection, and safe search examples
 
 The lab is for learning only. It is not a production Splunk architecture.
 
@@ -119,6 +120,30 @@ Instead, it runs a small allow-list of local lab commands:
 This keeps command execution scoped to the learning workflow while still letting
 you complete CLI-based lesson steps from the browser.
 
+## MCP Integration
+
+The lab includes a local MCP server named `learn-splunk`.
+
+- Endpoint: `http://localhost:8050/mcp`
+- Project config: `.mcp.json`
+- Service: `splunk-mcp`
+- Health check: `http://localhost:8050/healthz`
+
+Use this endpoint from Cursor or another MCP client to inspect the running lab
+with tools such as `validate_spl`, `search_oneshot`, `search_export`,
+`get_indexes`, `get_saved_searches`, `run_saved_search`, and `get_config`.
+
+Example SPL prompts to try through `search_oneshot`:
+
+```spl
+index=lab_otel sourcetype=lab:otel | head 5
+index=buttercup sourcetype=buttercup_sales | stats sum(revenue) by vendor
+index=lab_hec sourcetype=lab:hec | head 5
+```
+
+The MCP endpoint is unauthenticated for local learning and is bound to
+`127.0.0.1` on the host. Do not expose port `8050` to a LAN or the internet.
+
 ## Testing
 
 See `TEST_PLAN.md` for the full test strategy.
@@ -130,6 +155,7 @@ cd web && npm test
 cd .. && docker compose config --quiet
 python3 -m py_compile scripts/generate_logs.py scripts/validate_lab.py
 python3 scripts/validate_lab.py
+python3 scripts/check_mcp_status.py
 ```
 
 ## Important Notes

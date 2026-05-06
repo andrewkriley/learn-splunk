@@ -26,6 +26,46 @@ test("Splunk web embedding app is mounted into all Splunk Web services", async (
   assert.equal(occurrences, 3);
 });
 
+test("compose defines the local Learn Splunk MCP service", async () => {
+  const compose = await readFile(path.join(repoRoot, "docker-compose.yml"), "utf-8");
+  const mcpConfig = await readFile(path.join(repoRoot, ".mcp.json"), "utf-8");
+  const dockerfile = await readFile(path.join(repoRoot, "mcp/Dockerfile"), "utf-8");
+
+  assert.match(compose, /splunk-mcp:/);
+  assert.match(compose, /context:\s*\.\/mcp/);
+  assert.match(compose, /SPLUNK_HOST:\s*splunk-indexer/);
+  assert.match(compose, /SPLUNK_PORT:\s*8089/);
+  assert.match(compose, /SPLUNK_PASSWORD:\s*\$\{SPLUNK_PASSWORD:\?Set SPLUNK_PASSWORD in \.env\}/);
+  assert.match(compose, /127\.0\.0\.1:8050:8050/);
+  assert.match(compose, /lesson-web:[\s\S]*depends_on:[\s\S]*splunk-mcp/);
+  assert.match(mcpConfig, /"learn-splunk"/);
+  assert.match(mcpConfig, /"url": "http:\/\/localhost:8050\/mcp"/);
+  assert.match(dockerfile, /SPLUNK_MCP_SERVER2_REF=fac6cbb37be057a68607642d8d60d9c19ba5a060/);
+});
+
+test("Splunk apps use Learn Splunk as the author name", async () => {
+  const appConfs = [
+    "splunk/common/apps/lab_web_embedding/default/app.conf",
+    "splunk/deployment-apps/TA_common_outputs/default/app.conf",
+    "splunk/deployment-apps/TA_heavy_forwarder_parsing/default/app.conf",
+    "splunk/deployment-apps/TA_heavy_forwarder_receiving/default/app.conf",
+    "splunk/deployment-apps/TA_linux_file_inputs/default/app.conf",
+    "splunk/deployment-apps/TA_network_inputs/default/app.conf",
+    "splunk/deployment-apps/TA_outputs_to_heavy/default/app.conf",
+    "splunk/deployment-apps/TA_scripted_inputs/default/app.conf",
+    "splunk/deployment-server/apps/lab_web_proxy/default/app.conf",
+    "splunk/heavy-forwarder/apps/lab_web_proxy/default/app.conf",
+    "splunk/indexer/apps/lab_index/default/app.conf",
+    "splunk/indexer/apps/lab_web_proxy/default/app.conf",
+  ];
+
+  for (const file of appConfs) {
+    const content = await readFile(path.join(repoRoot, file), "utf-8");
+    assert.match(content, /author\s*=\s*Learn Splunk/);
+    assert.doesNotMatch(content, /Splunk Learn Forwarding/);
+  }
+});
+
 test("Splunk web proxy apps define path prefixes for same-origin embedding", async () => {
   const expectations = [
     ["splunk/indexer/apps/lab_web_proxy/default/web.conf", /root_endpoint\s*=\s*\/splunk/],
@@ -130,11 +170,14 @@ test("file input app defines structured JSON and XML monitors", async () => {
 
   assert.match(inputs, /\[monitor:\/\/\/var\/log\/lab\/events\.json\]/);
   assert.match(inputs, /sourcetype\s*=\s*lab:json/);
+  assert.match(inputs, /\[monitor:\/\/\/var\/log\/lab\/otel\.json\]/);
+  assert.match(inputs, /sourcetype\s*=\s*lab:otel/);
   assert.match(inputs, /\[monitor:\/\/\/var\/log\/lab\/events\.xml\]/);
   assert.match(inputs, /sourcetype\s*=\s*lab:xml/);
   for (const props of [indexerProps, heavyProps]) {
     assert.match(props, /\[lab:json\]/);
     assert.match(props, /INDEXED_EXTRACTIONS\s*=\s*json/);
+    assert.match(props, /\[lab:otel\]/);
     assert.match(props, /\[lab:xml\]/);
     assert.match(props, /TIME_PREFIX\s*=\s*ts="/);
     assert.match(props, /\[lab:hec\]/);
@@ -152,6 +195,7 @@ test("indexer defines dedicated source indexes and removes shared lab index", as
     "lab_tcp",
     "lab_udp",
     "lab_json",
+    "lab_otel",
     "lab_xml",
     "lab_hec",
     "lab_scripted",
@@ -161,6 +205,48 @@ test("indexer defines dedicated source indexes and removes shared lab index", as
     assert.match(indexes, new RegExp(`\\$SPLUNK_DB/${indexName}/db`));
   }
   assert.doesNotMatch(indexes, /^\[lab\]/m);
+});
+
+test("indexer mounts and defines Buttercup Games sample app", async () => {
+  const compose = await readFile(path.join(repoRoot, "docker-compose.yml"), "utf-8");
+  const appConf = await readFile(path.join(repoRoot, "splunk/indexer/apps/buttercup_app/app.conf"), "utf-8");
+  const indexes = await readFile(
+    path.join(repoRoot, "splunk/indexer/apps/buttercup_app/default/indexes.conf"),
+    "utf-8",
+  );
+  const inputs = await readFile(
+    path.join(repoRoot, "splunk/indexer/apps/buttercup_app/default/inputs.conf"),
+    "utf-8",
+  );
+  const props = await readFile(
+    path.join(repoRoot, "splunk/indexer/apps/buttercup_app/default/props.conf"),
+    "utf-8",
+  );
+  const access = await readFile(
+    path.join(repoRoot, "splunk/indexer/apps/buttercup_app/data/buttercup_access.txt"),
+    "utf-8",
+  );
+  const sales = await readFile(
+    path.join(repoRoot, "splunk/indexer/apps/buttercup_app/data/vendor_sales.csv"),
+    "utf-8",
+  );
+  const products = await readFile(
+    path.join(repoRoot, "splunk/indexer/apps/buttercup_app/data/products.csv"),
+    "utf-8",
+  );
+
+  assert.match(compose, /buttercup_app:\/opt\/splunk\/etc\/apps\/buttercup_app/);
+  assert.match(appConf, /label=Buttercup Games/);
+  assert.match(indexes, /\[buttercup\]/);
+  assert.match(inputs, /buttercup_access\.txt[\s\S]*index\s*=\s*buttercup[\s\S]*sourcetype\s*=\s*buttercup_web/);
+  assert.match(inputs, /vendor_sales\.csv[\s\S]*sourcetype\s*=\s*buttercup_sales/);
+  assert.match(inputs, /products\.csv[\s\S]*sourcetype\s*=\s*buttercup_products/);
+  assert.match(props, /\[buttercup_sales\][\s\S]*INDEXED_EXTRACTIONS\s*=\s*csv/);
+  assert.match(props, /\[buttercup_products\][\s\S]*INDEXED_EXTRACTIONS\s*=\s*csv/);
+  assert.match(props, /\[buttercup_web\][\s\S]*EXTRACT-apache/);
+  assert.match(access, /GET \/productcatalog/);
+  assert.match(sales, /units_sold,revenue/);
+  assert.match(products, /product_id,product_name,price,category/);
 });
 
 test("data source inputs route to dedicated indexes", async () => {
@@ -179,6 +265,8 @@ test("data source inputs route to dedicated indexes", async () => {
 
   assert.match(fileInputs, /\[monitor:\/\/\/var\/log\/lab\/app\.log\][\s\S]*index\s*=\s*lab_file/);
   assert.match(fileInputs, /\[monitor:\/\/\/var\/log\/lab\/events\.json\][\s\S]*index\s*=\s*lab_json/);
+  assert.match(fileInputs, /\[monitor:\/\/\/var\/log\/lab\/otel\.json\][\s\S]*index\s*=\s*lab_otel/);
+  assert.match(fileInputs, /\[monitor:\/\/\/var\/log\/lab\/otel\.json\][\s\S]*sourcetype\s*=\s*lab:otel/);
   assert.match(fileInputs, /\[monitor:\/\/\/var\/log\/lab\/events\.xml\][\s\S]*index\s*=\s*lab_xml/);
   assert.match(fileInputs, /\[monitor:\/\/\/var\/log\/lab\/pii\.log\][\s\S]*index\s*=\s*lab_masked/);
   assert.match(fileInputs, /\[monitor:\/\/\/var\/log\/lab\/pii\.log\][\s\S]*sourcetype\s*=\s*lab:masked/);
@@ -241,6 +329,15 @@ test("HEC generator sets explicit Splunk metadata", async () => {
   assert.match(generator, /"sourcetype": SOURCETYPE/);
 });
 
+test("OpenTelemetry generator sets explicit Splunk metadata", async () => {
+  const generator = await readFile(path.join(repoRoot, "scripts/generate_otel_events.py"), "utf-8");
+
+  assert.match(generator, /trace_id/);
+  assert.match(generator, /span_id/);
+  assert.match(generator, /service\.name/);
+  assert.match(generator, /telemetry_type/);
+});
+
 test("data source inspector lists destination metadata", async () => {
   const inspector = await readFile(path.join(repoRoot, "scripts/show_data_source.py"), "utf-8");
 
@@ -257,13 +354,20 @@ test("data source inspector lists destination metadata", async () => {
     '"index": "lab_json"',
     '"source": "/var/log/lab/events.json"',
     '"sourcetype": "lab:json"',
+    '"index": "lab_otel"',
+    '"source": "/var/log/lab/otel.json"',
+    '"sourcetype": "lab:otel"',
     '"index": "lab_xml"',
     '"source": "/var/log/lab/events.xml"',
     '"sourcetype": "lab:xml"',
     '"index": "lab_masked"',
     '"source": "/var/log/lab/pii.log"',
     '"sourcetype": "lab:masked"',
+    '"index": "buttercup"',
+    '"source": "buttercup_app/data/*"',
+    '"sourcetype": "buttercup_web, buttercup_sales, buttercup_products"',
     '"files": [',
+    'BUTTERCUP_APP',
     'FILE_INPUTS',
     'DIRECT_OUTPUTS',
     'VIA_HEAVY_OUTPUTS',
@@ -273,6 +377,7 @@ test("data source inspector lists destination metadata", async () => {
     'scripts/generate_pii_events.py',
     'scripts/generate_hec_events.py',
     'scripts/generate_structured_file_events.py',
+    'scripts/generate_otel_events.py',
     'scripts/generate_network_events.py',
     'scripts/generate_logs.py',
     'Relevant lab files',
@@ -280,6 +385,7 @@ test("data source inspector lists destination metadata", async () => {
     'RUNTIME HEC INPUT',
     'print_metadata("lab_hec", "http-event-collector-source", "lab:hec")',
     'print_metadata("lab_scripted", "TA_scripted_inputs/bin/*", "lab:scripted:python, lab:scripted:bash")',
+    'show_buttercup()',
   ]) {
     assert.ok(inspector.includes(expected), expected);
   }
@@ -293,12 +399,15 @@ test("compose defines second UF and data source examples", async () => {
   assert.match(compose, /tcp-udp-source-direct:/);
   assert.match(compose, /tcp-udp-source-via-heavy:/);
   assert.match(compose, /structured-json-source:/);
+  assert.match(compose, /open-telemetry-source:/);
+  assert.match(compose, /generate_otel_events\.py/);
   assert.match(compose, /structured-xml-source:/);
   assert.match(compose, /masked-pii-source:/);
   assert.match(compose, /generate_pii_events\.py/);
   assert.match(compose, /http-event-collector-source:/);
   assert.match(compose, /generate_hec_events\.py/);
   assert.match(compose, /TA_scripted_inputs:\/opt\/splunk\/etc\/apps\/TA_scripted_inputs/);
+  assert.match(compose, /buttercup_app:\/opt\/splunk\/etc\/apps\/buttercup_app/);
   assert.match(compose, /universal-forwarder-via-heavy",\s*"1514",\s*"1515"/);
   assert.match(compose, /TA_outputs_to_heavy:\/opt\/splunkforwarder\/etc\/apps\/TA_outputs_to_heavy/);
   assert.match(

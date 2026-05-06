@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Generate simple TCP and UDP events for the Splunk forwarding lab."""
+"""Generate simple TCP and UDP events for the Learn Splunk lab."""
 
 from __future__ import annotations
 

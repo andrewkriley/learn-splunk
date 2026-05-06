@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Generate simple application logs for the Splunk forwarding lab."""
+"""Generate simple application logs for the Learn Splunk lab."""
 
 from __future__ import annotations
 

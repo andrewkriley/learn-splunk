@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Generate JSON or XML file events for the Splunk forwarding lab."""
+"""Generate JSON or XML file events for the Learn Splunk lab."""
 
 from __future__ import annotations
 

@@ -15,7 +15,7 @@ test("cockpit CSS prioritizes a two-pane layout with lessons below", async () =>
   );
   assert.match(
     css,
-    /grid-template-rows:\s*calc\(100vh - 88px\) minmax\(170px, auto\) minmax\(420px, auto\)/,
+    /grid-template-rows:\s*calc\(100vh - 88px\) minmax\(170px, auto\) minmax\(190px, auto\) minmax\(420px, auto\)/,
   );
   assert.match(css, /min-height:\s*calc\(100vh - 56px\)/);
   assert.match(css, /overflow-y:\s*auto/);
@@ -24,8 +24,10 @@ test("cockpit CSS prioritizes a two-pane layout with lessons below", async () =>
   assert.match(css, /\.workspace\s*\{[\s\S]*grid-row:\s*1/);
   assert.match(css, /\.tips-panel\s*\{[\s\S]*grid-column:\s*1 \/ -1/);
   assert.match(css, /\.tips-panel\s*\{[\s\S]*grid-row:\s*2/);
+  assert.match(css, /\.mcp-panel\s*\{[\s\S]*grid-column:\s*1 \/ -1/);
+  assert.match(css, /\.mcp-panel\s*\{[\s\S]*grid-row:\s*3/);
   assert.match(css, /\.instructions\s*\{[\s\S]*grid-column:\s*1 \/ -1/);
-  assert.match(css, /\.instructions\s*\{[\s\S]*grid-row:\s*3/);
+  assert.match(css, /\.instructions\s*\{[\s\S]*grid-row:\s*4/);
 });
 
 test("cockpit CSS includes visual architecture diagram styles", async () => {
@@ -36,6 +38,9 @@ test("cockpit CSS includes visual architecture diagram styles", async () => {
   assert.match(css, /\.architecture-map/);
   assert.match(css, /\.cockpit-wrapper/);
   assert.match(css, /\.tips-panel/);
+  assert.match(css, /\.mcp-panel/);
+  assert.match(css, /\.mcp-card-list/);
+  assert.match(css, /\.mcp-card/);
   assert.match(css, /\.tip-list/);
   assert.match(css, /\.tip-card/);
   assert.match(css, /\.architecture-diagram/);

@@ -88,6 +88,14 @@ test("browser app embeds Splunk panes on same-origin paths", async () => {
   assert.doesNotMatch(html, /http:\/\/splunk\.localhost:3000/);
 });
 
+test("browser app uses Learn Splunk as the primary project name", async () => {
+  const html = await readFile(path.join(publicDir, "index.html"), "utf-8");
+
+  assert.match(html, /<title>Learn Splunk<\/title>/);
+  assert.match(html, /<strong>Learn Splunk<\/strong>/);
+  assert.doesNotMatch(html, /Splunk Learn Forwarding/);
+});
+
 test("browser app opens on a visual Splunk architecture landing page", async () => {
   const html = await readFile(path.join(publicDir, "index.html"), "utf-8");
 
@@ -95,6 +103,7 @@ test("browser app opens on a visual Splunk architecture landing page", async () 
   assert.match(html, /class="architecture-map"/);
   assert.match(html, /class="cockpit-wrapper"/);
   assert.match(html, /class="tips-panel"/);
+  assert.match(html, /class="mcp-panel"/);
   assert.doesNotMatch(html, /id="view-architecture"/);
   assert.match(html, /class="tab active" data-view="terminal"/);
   assert.match(html, /class="workspace-frame terminal active" id="view-terminal"/);
@@ -129,24 +138,31 @@ test("browser app opens on a visual Splunk architecture landing page", async () 
   assert.match(html, /TCP Example/);
   assert.match(html, /UDP Example/);
   assert.match(html, /JSON Example/);
+  assert.match(html, /OpenTelemetry Example/);
   assert.match(html, /XML Example/);
   assert.match(html, /HEC Example/);
   assert.match(html, /Scripted Example/);
   assert.match(html, /Masked PII Example/);
+  assert.match(html, /Buttercup App Example/);
   assert.match(html, /data-command="dataSourceFile"/);
   assert.match(html, /data-command="dataSourceTcp"/);
   assert.match(html, /data-command="dataSourceUdp"/);
   assert.match(html, /data-command="dataSourceJson"/);
+  assert.match(html, /data-command="dataSourceOtel"/);
   assert.match(html, /data-command="dataSourceXml"/);
   assert.match(html, /data-command="dataSourceHec"/);
   assert.match(html, /data-command="dataSourceScripted"/);
   assert.match(html, /data-command="dataSourceMasked"/);
+  assert.match(html, /data-command="dataSourceButtercup"/);
   assert.match(html, /structured-json-source/);
+  assert.match(html, /open-telemetry-source/);
   assert.match(html, /structured-xml-source/);
   assert.match(html, /http-event-collector-source/);
   assert.match(html, /Splunk HTTP Event Collector/);
   assert.match(html, /Python and bash scripts run as Splunk scripted inputs/);
   assert.match(html, /HF applies regex masking before data is stored/);
+  assert.match(html, /emits OTLP-style JSON records with traces, spans, resources, and attributes/);
+  assert.match(html, /bundled web, sales, and product sample data indexed by Splunk Enterprise/);
   for (const value of [
     "queries dedicated source indexes",
     "index=lab_file",
@@ -163,6 +179,9 @@ test("browser app opens on a visual Splunk architecture landing page", async () 
     "source=/var/log/lab/events.json",
     "sourcetype=lab:json",
     "config=inputs.conf, props.conf",
+    "index=lab_otel",
+    "source=/var/log/lab/otel.json",
+    "sourcetype=lab:otel",
     "index=lab_xml",
     "source=/var/log/lab/events.xml",
     "sourcetype=lab:xml",
@@ -178,6 +197,10 @@ test("browser app opens on a visual Splunk architecture landing page", async () 
     "source=/var/log/lab/pii.log",
     "sourcetype=lab:masked",
     "config=inputs.conf, props.conf, transforms.conf",
+    "index=buttercup",
+    "source=buttercup_app/data/*",
+    "sourcetype=buttercup_web, buttercup_sales, buttercup_products",
+    "config=app.conf, inputs.conf, props.conf, indexes.conf",
   ]) {
     assert.match(html, new RegExp(value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")));
   }
@@ -205,7 +228,7 @@ test("browser app opens on a visual Splunk architecture landing page", async () 
   assert.doesNotMatch(html, /HF → Indexer/);
   const collectionSection = html.slice(
     html.indexOf('<section class="tier collection-tier">'),
-    html.indexOf('<div class="vertical-flow ingest">file, tcp, udp, json, xml, hec, scripted, masked pii inputs</div>'),
+    html.indexOf('<div class="vertical-flow ingest">file, tcp, udp, json, otel, xml, hec, scripted, masked pii, buttercup app inputs</div>'),
   );
   assert.doesNotMatch(collectionSection, /indexer/i);
   assert.ok(collectionSection.indexOf("heavy-forwarder") < collectionSection.indexOf("universal-forwarder-via-heavy"));
@@ -234,10 +257,25 @@ test("browser app places lessons below the two primary panes", async () => {
 
   assert.ok(html.indexOf('<aside class="architecture-pane">') < html.indexOf('<section class="workspace">'));
   assert.ok(html.indexOf('<section class="workspace">') < html.indexOf('<section class="tips-panel"'));
-  assert.ok(html.indexOf('<section class="tips-panel"') < html.indexOf('<section class="instructions">'));
+  assert.ok(html.indexOf('<section class="tips-panel"') < html.indexOf('<section class="mcp-panel"'));
+  assert.ok(html.indexOf('<section class="mcp-panel"') < html.indexOf('<section class="instructions">'));
   assert.match(html, /<header class="lesson-heading">/);
   assert.match(html, /<h1>Lesson Modules<\/h1>/);
   assert.match(html, /id="lesson-list" class="lesson-list module-row"/);
+});
+
+test("browser app documents the Learn Splunk MCP integration", async () => {
+  const html = await readFile(path.join(publicDir, "index.html"), "utf-8");
+
+  assert.match(html, /aria-label="MCP integration"/);
+  assert.match(html, /learn-splunk/);
+  assert.match(html, /http:\/\/localhost:8050\/mcp/);
+  assert.match(html, /search_oneshot/);
+  assert.match(html, /get_indexes/);
+  assert.match(html, /index=lab_otel sourcetype=lab:otel \| head 5/);
+  assert.match(html, /index=buttercup sourcetype=buttercup_sales/);
+  assert.match(html, /index=lab_hec sourcetype=lab:hec/);
+  assert.match(html, /Do not expose port 8050 beyond localhost/);
 });
 
 test("browser app opens data source cards in the Lab CLI pane", async () => {

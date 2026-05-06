@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Run lightweight checks against the local Splunk forwarding lab."""
+"""Run lightweight checks against the local Learn Splunk lab."""
 
 from __future__ import annotations
 
@@ -28,6 +28,7 @@ REQUIRED_SERVICES = {
     "tcp-udp-source-direct",
     "tcp-udp-source-via-heavy",
     "structured-json-source",
+    "open-telemetry-source",
     "structured-xml-source",
     "masked-pii-source",
     "http-event-collector-source",
@@ -37,10 +38,12 @@ EXPECTED_INDEX_SOURCETYPES = {
     "lab_tcp": {"lab:tcp"},
     "lab_udp": {"lab:udp"},
     "lab_json": {"lab:json"},
+    "lab_otel": {"lab:otel"},
     "lab_xml": {"lab:xml"},
     "lab_hec": {"lab:hec"},
     "lab_scripted": {"lab:scripted:python", "lab:scripted:bash"},
     "lab_masked": {"lab:masked"},
+    "buttercup": {"buttercup_web", "buttercup_sales", "buttercup_products"},
 }
 
 

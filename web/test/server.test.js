@@ -182,6 +182,13 @@ test("command API exposes props.conf inspection commands", async (t) => {
   assert.ok(
     body.commands.some(
       (command) =>
+        command.id === "checkMcpStatus" &&
+        command.label === "Check Learn Splunk MCP status",
+    ),
+  );
+  assert.ok(
+    body.commands.some(
+      (command) =>
         command.id === "restartUniversalForwarder" &&
         command.label === "Restart universal forwarders",
     ),
@@ -191,10 +198,12 @@ test("command API exposes props.conf inspection commands", async (t) => {
     "dataSourceTcp",
     "dataSourceUdp",
     "dataSourceJson",
+    "dataSourceOtel",
     "dataSourceXml",
     "dataSourceHec",
     "dataSourceScripted",
     "dataSourceMasked",
+    "dataSourceButtercup",
   ]) {
     assert.ok(body.commands.some((command) => command.id === id));
   }

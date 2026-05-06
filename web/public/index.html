@@ -3,13 +3,13 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Splunk Learn Forwarding</title>
+    <title>Learn Splunk</title>
     <link rel="stylesheet" href="/styles.css" />
   </head>
   <body>
     <header class="topbar">
       <div>
-        <strong>Splunk Learn Forwarding</strong>
+        <strong>Learn Splunk</strong>
         <span class="muted">local lab cockpit</span>
       </div>
       <nav>
@@ -40,7 +40,7 @@
               <small>wraps guided lessons, Splunk panes, Lab CLI, and the topology map</small>
             </section>
 
-            <div class="architecture-diagram" aria-label="Splunk forwarding lab architecture">
+            <div class="architecture-diagram" aria-label="Learn Splunk lab architecture">
               <aside class="management-column">
                 <h3>Management</h3>
                 <div class="node deployment">
@@ -142,7 +142,7 @@
                   </div>
                 </section>
 
-                <div class="vertical-flow ingest">file, tcp, udp, json, xml, hec, scripted, masked pii inputs</div>
+                <div class="vertical-flow ingest">file, tcp, udp, json, otel, xml, hec, scripted, masked pii, buttercup app inputs</div>
 
                 <section class="tier data-source-tier">
                   <h3>Data Source Tier</h3>
@@ -183,6 +183,15 @@
                       <span class="source-meta">sourcetype=lab:json</span>
                       <span class="source-meta">config=inputs.conf, props.conf</span>
                     </button>
+                    <button class="node source data-source-card" data-command="dataSourceOtel">
+                      <span class="node-role">OpenTelemetry Example</span>
+                      <strong>open-telemetry-source</strong>
+                      <small>emits OTLP-style JSON records with traces, spans, resources, and attributes</small>
+                      <span class="source-meta">index=lab_otel</span>
+                      <span class="source-meta">source=/var/log/lab/otel.json</span>
+                      <span class="source-meta">sourcetype=lab:otel</span>
+                      <span class="source-meta">config=inputs.conf, props.conf</span>
+                    </button>
                     <button class="node source data-source-card" data-command="dataSourceXml">
                       <span class="node-role">XML Example</span>
                       <strong>structured-xml-source</strong>
@@ -218,6 +227,15 @@
                       <span class="source-meta">source=/var/log/lab/pii.log</span>
                       <span class="source-meta">sourcetype=lab:masked</span>
                       <span class="source-meta">config=inputs.conf, props.conf, transforms.conf</span>
+                    </button>
+                    <button class="node source data-source-card" data-command="dataSourceButtercup">
+                      <span class="node-role">Buttercup App Example</span>
+                      <strong>buttercup_app</strong>
+                      <small>bundled web, sales, and product sample data indexed by Splunk Enterprise</small>
+                      <span class="source-meta">index=buttercup</span>
+                      <span class="source-meta">source=buttercup_app/data/*</span>
+                      <span class="source-meta">sourcetype=buttercup_web, buttercup_sales, buttercup_products</span>
+                      <span class="source-meta">config=app.conf, inputs.conf, props.conf, indexes.conf</span>
                     </button>
                   </div>
                 </section>
@@ -294,6 +312,45 @@
             <small>
               In this lab, the HF applies transforms to `lab:masked` before forwarding to the
               indexer, so stored events contain masked email and card values.
+            </small>
+          </article>
+        </div>
+      </section>
+
+      <section class="mcp-panel" aria-label="MCP integration">
+        <p class="eyebrow">MCP Integration</p>
+        <h3>Connect AI Tools To The Lab</h3>
+        <div class="mcp-card-list">
+          <article class="mcp-card">
+            <strong>Local Endpoint</strong>
+            <p><code>http://localhost:8050/mcp</code></p>
+            <small>
+              The `learn-splunk` MCP server uses Streamable HTTP and is bound to
+              localhost for this lab.
+            </small>
+          </article>
+          <article class="mcp-card">
+            <strong>Core Tools</strong>
+            <p><code>search_oneshot</code>, <code>search_export</code>, <code>get_indexes</code></p>
+            <small>
+              Tools let Claude or Cursor validate SPL, inspect indexes, and run safe
+              searches through Splunk's management API.
+            </small>
+          </article>
+          <article class="mcp-card">
+            <strong>Try These Queries</strong>
+            <p><code>index=lab_otel sourcetype=lab:otel | head 5</code></p>
+            <small>
+              Also try `index=buttercup sourcetype=buttercup_sales` and
+              `index=lab_hec sourcetype=lab:hec`.
+            </small>
+          </article>
+          <article class="mcp-card">
+            <strong>Local-Only Security</strong>
+            <p>Unauthenticated endpoint for local learning only.</p>
+            <small>
+              Do not expose port 8050 beyond localhost. Splunk credentials still come
+              from `.env` and are not committed.
             </small>
           </article>
         </div>

@@ -24,6 +24,7 @@ VIA_HEAVY_OUTPUTS = "splunk/deployment-apps/TA_outputs_to_heavy/default/outputs.
 HF_RECEIVING_INPUTS = "splunk/deployment-apps/TA_heavy_forwarder_receiving/default/inputs.conf"
 HF_PROPS = "splunk/deployment-apps/TA_heavy_forwarder_parsing/default/props.conf"
 HF_TRANSFORMS = "splunk/deployment-apps/TA_heavy_forwarder_parsing/default/transforms.conf"
+BUTTERCUP_APP = "splunk/indexer/apps/buttercup_app"
 
 
 DATA_SOURCES = {
@@ -80,6 +81,34 @@ DATA_SOURCES = {
             "inputs",
             "list",
             "monitor:///var/log/lab/events.json",
+            "--debug",
+        ],
+    },
+    "otel": {
+        "title": "OpenTelemetry source -> universal-forwarder -> splunk-indexer",
+        "index": "lab_otel",
+        "source": "/var/log/lab/otel.json",
+        "sourcetype": "lab:otel",
+        "files": [
+            "scripts/generate_otel_events.py",
+            FILE_INPUTS,
+            DIRECT_OUTPUTS,
+            INDEXES_CONF,
+            INDEXER_PROPS,
+        ],
+        "command": [
+            "docker",
+            "compose",
+            "exec",
+            "-T",
+            "-u",
+            "splunk",
+            "universal-forwarder",
+            "/opt/splunkforwarder/bin/splunk",
+            "btool",
+            "inputs",
+            "list",
+            "monitor:///var/log/lab/otel.json",
             "--debug",
         ],
     },
@@ -199,6 +228,37 @@ DATA_SOURCES = {
             "inputs",
             "list",
             "monitor:///var/log/lab/pii.log",
+            "--debug",
+        ],
+    },
+    "buttercup": {
+        "title": "Buttercup Games app -> splunk-indexer local app monitor inputs",
+        "index": "buttercup",
+        "source": "buttercup_app/data/*",
+        "sourcetype": "buttercup_web, buttercup_sales, buttercup_products",
+        "files": [
+            f"{BUTTERCUP_APP}/app.conf",
+            f"{BUTTERCUP_APP}/default/indexes.conf",
+            f"{BUTTERCUP_APP}/default/inputs.conf",
+            f"{BUTTERCUP_APP}/default/props.conf",
+            f"{BUTTERCUP_APP}/metadata/default.meta",
+            f"{BUTTERCUP_APP}/data/buttercup_access.txt",
+            f"{BUTTERCUP_APP}/data/vendor_sales.csv",
+            f"{BUTTERCUP_APP}/data/products.csv",
+        ],
+        "command": [
+            "docker",
+            "compose",
+            "exec",
+            "-T",
+            "-u",
+            "splunk",
+            "splunk-indexer",
+            "/opt/splunk/bin/splunk",
+            "btool",
+            "inputs",
+            "list",
+            "monitor:///opt/splunk/etc/apps/buttercup_app/data/buttercup_access.txt",
             "--debug",
         ],
     },
@@ -369,9 +429,42 @@ def show_scripted() -> int:
     return 0
 
 
+def show_buttercup() -> int:
+    stanzas = [
+        "monitor:///opt/splunk/etc/apps/buttercup_app/data/buttercup_access.txt",
+        "monitor:///opt/splunk/etc/apps/buttercup_app/data/vendor_sales.csv",
+        "monitor:///opt/splunk/etc/apps/buttercup_app/data/products.csv",
+    ]
+    definition = DATA_SOURCES["buttercup"]
+    print(definition["title"])
+    print_metadata(definition["index"], definition["source"], definition["sourcetype"])
+    print_relevant_files(definition["files"])
+    for stanza in stanzas:
+        print()
+        print("=" * 80)
+        print(f"EFFECTIVE RUNTIME CONFIG: {stanza}")
+        print("=" * 80)
+        print(run([
+            "docker",
+            "compose",
+            "exec",
+            "-T",
+            "-u",
+            "splunk",
+            "splunk-indexer",
+            "/opt/splunk/bin/splunk",
+            "btool",
+            "inputs",
+            "list",
+            stanza,
+            "--debug",
+        ]))
+    return 0
+
+
 def main() -> int:
     if len(sys.argv) != 2:
-        print("usage: show_data_source.py <file|json|xml|tcp|udp|hec|scripted|masked>", file=sys.stderr)
+        print("usage: show_data_source.py <file|json|otel|xml|tcp|udp|hec|scripted|masked|buttercup>", file=sys.stderr)
         return 2
 
     source = sys.argv[1]
@@ -379,6 +472,8 @@ def main() -> int:
         return show_hec()
     if source == "scripted":
         return show_scripted()
+    if source == "buttercup":
+        return show_buttercup()
 
     definition = DATA_SOURCES.get(source)
     if not definition:

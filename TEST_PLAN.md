@@ -36,6 +36,12 @@ python3 -m py_compile scripts/generate_logs.py scripts/validate_lab.py
 
 These checks catch malformed Compose config and Python syntax errors.
 
+For MCP changes, also run:
+
+```sh
+python3 -m py_compile scripts/check_mcp_status.py
+```
+
 ### 3. Lab Integration Validation
 
 Run after `docker compose up -d`:
@@ -52,7 +58,24 @@ PASS indexer management API is ready
 PASS lab events are searchable
 ```
 
-### 4. Browser Smoke Checks
+### 4. MCP Smoke Checks
+
+Run after `docker compose up -d`:
+
+```sh
+docker compose up -d --build splunk-mcp
+python3 scripts/check_mcp_status.py
+```
+
+Expected behavior:
+
+- `.mcp.json` contains a `learn-splunk` entry pointing at
+  `http://localhost:8050/mcp`.
+- `http://localhost:8050/healthz` returns JSON with `ok: true`.
+- MCP clients can initialize, list tools, and see `validate_spl`,
+  `search_oneshot`, `get_indexes`, and `get_config`.
+
+### 5. Browser Smoke Checks
 
 Open:
 
@@ -66,6 +89,7 @@ Expected behavior:
 - The cockpit loads lessons without staying on `Loading lessons...`.
 - The Splunk tabs show Splunk login pages or active sessions.
 - The `Lab CLI` tab can run `Run full lab validation`.
+- The `Lab CLI` tab can run `Check Learn Splunk MCP status`.
 
 ## TDD Workflow
 

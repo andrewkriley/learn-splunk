@@ -256,6 +256,11 @@ export function createApp(options = {}) {
       cmd: "python3",
       args: ["scripts/show_deployable_apps.py"],
     },
+    checkMcpStatus: {
+      label: "Check Learn Splunk MCP status",
+      cmd: "python3",
+      args: ["scripts/check_mcp_status.py", "http://splunk-mcp:8050/healthz"],
+    },
     listForwardServers: {
       label: "List universal forwarder outputs",
       cmd: "docker",
@@ -364,6 +369,11 @@ export function createApp(options = {}) {
       cmd: "python3",
       args: ["scripts/show_data_source.py", "json"],
     },
+    dataSourceOtel: {
+      label: "Data source: OpenTelemetry JSON config",
+      cmd: "python3",
+      args: ["scripts/show_data_source.py", "otel"],
+    },
     dataSourceXml: {
       label: "Data source: XML file input config",
       cmd: "python3",
@@ -383,6 +393,11 @@ export function createApp(options = {}) {
       label: "Data source: HF regex masking config",
       cmd: "python3",
       args: ["scripts/show_data_source.py", "masked"],
+    },
+    dataSourceButtercup: {
+      label: "Data source: Buttercup Games app config",
+      cmd: "python3",
+      args: ["scripts/show_data_source.py", "buttercup"],
     },
   };
 

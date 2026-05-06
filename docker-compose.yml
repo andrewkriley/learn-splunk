@@ -15,6 +15,7 @@ services:
       - "9997:9997"
     volumes:
       - ./splunk/indexer/apps/lab_index:/opt/splunk/etc/apps/lab_index
+      - ./splunk/indexer/apps/buttercup_app:/opt/splunk/etc/apps/buttercup_app
       - ./splunk/common/apps/lab_web_embedding:/opt/splunk/etc/apps/lab_web_embedding
       - ./splunk/indexer/apps/lab_web_proxy:/opt/splunk/etc/apps/lab_web_proxy
     networks:
@@ -204,6 +205,21 @@ services:
         aliases:
           - structured-json-source
 
+  open-telemetry-source:
+    image: python:3.12-alpine
+    hostname: open-telemetry-source
+    container_name: open-telemetry-source
+    command: ["python", "/opt/lab/generate_otel_events.py", "/var/log/lab/otel.json"]
+    volumes:
+      - ./scripts/generate_otel_events.py:/opt/lab/generate_otel_events.py:ro
+      - ./data/sample-logs:/var/log/lab
+    depends_on:
+      - universal-forwarder
+    networks:
+      splunk-lab:
+        aliases:
+          - open-telemetry-source
+
   structured-xml-source:
     image: python:3.12-alpine
     hostname: structured-xml-source
@@ -253,6 +269,36 @@ services:
         aliases:
           - http-event-collector-source
 
+  splunk-mcp:
+    build:
+      context: ./mcp
+    hostname: splunk-mcp
+    container_name: splunk-mcp
+    environment:
+      TRANSPORT: http
+      HOST: 0.0.0.0
+      PORT: 8050
+      SERVER_NAME: Learn Splunk MCP
+      SERVER_DESCRIPTION: MCP server for the Learn Splunk lab
+      SPLUNK_HOST: splunk-indexer
+      SPLUNK_PORT: 8089
+      SPLUNK_USERNAME: admin
+      SPLUNK_PASSWORD: ${SPLUNK_PASSWORD:?Set SPLUNK_PASSWORD in .env}
+      VERIFY_SSL: "false"
+      NODE_TLS_REJECT_UNAUTHORIZED: "0"
+      SPL_MAX_EVENTS_COUNT: 1000
+      SPL_RISK_TOLERANCE: 75
+      SPL_SAFE_TIMERANGE: 24h
+      SPL_SANITIZE_OUTPUT: "true"
+    ports:
+      - "127.0.0.1:8050:8050"
+    depends_on:
+      - splunk-indexer
+    networks:
+      splunk-lab:
+        aliases:
+          - splunk-mcp
+
   lesson-web:
     build:
       context: ./web
@@ -274,9 +320,11 @@ services:
       - universal-forwarder
       - universal-forwarder-via-heavy
       - structured-json-source
+      - open-telemetry-source
       - structured-xml-source
       - masked-pii-source
       - http-event-collector-source
+      - splunk-mcp
     networks:
       splunk-lab:
         aliases:

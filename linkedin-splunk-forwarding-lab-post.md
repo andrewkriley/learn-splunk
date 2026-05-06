@@ -2,7 +2,7 @@
 
 Not just “click around Splunk Web and hope it makes sense” learning. I wanted a practical lab where I could see the full journey from data source to searchable event.
 
-So I built a local Docker-based Splunk forwarding lab.
+So I built a local Docker-based Learn Splunk lab.
 
 It started as a basic setup: Splunk Enterprise, Deployment Server, Heavy Forwarder, Universal Forwarder, some sample logs, and a few lessons.
 

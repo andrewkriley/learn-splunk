@@ -85,7 +85,7 @@ button.active {
   display: grid;
   gap: 1rem;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  grid-template-rows: calc(100vh - 88px) minmax(170px, auto) minmax(420px, auto);
+  grid-template-rows: calc(100vh - 88px) minmax(170px, auto) minmax(190px, auto) minmax(420px, auto);
   min-height: calc(100vh - 56px);
   min-width: 1320px;
   padding: 1rem;
@@ -93,6 +93,7 @@ button.active {
 
 .architecture-pane,
 .instructions,
+.mcp-panel,
 .tips-panel,
 .workspace {
   background: var(--panel);
@@ -155,7 +156,7 @@ button.active {
 .instructions {
   display: grid;
   grid-column: 1 / -1;
-  grid-row: 3;
+  grid-row: 4;
   grid-template-rows: auto minmax(0, 1fr);
   overflow: hidden;
 }
@@ -584,6 +585,55 @@ button.active {
 .tip-card small {
   color: var(--muted);
   display: block;
+}
+
+.mcp-panel {
+  border-top: 1px solid var(--border);
+  grid-column: 1 / -1;
+  grid-row: 3;
+  overflow: auto;
+  padding: 0.75rem 1rem;
+}
+
+.mcp-panel h3 {
+  font-size: 0.95rem;
+  margin: 0.15rem 0 0.4rem;
+}
+
+.mcp-card-list {
+  display: grid;
+  gap: 0.5rem;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.mcp-card {
+  background: #ffffff;
+  border: 1px solid var(--border);
+  border-left: 4px solid var(--purple);
+  border-radius: 10px;
+  padding: 0.55rem;
+}
+
+.mcp-card strong {
+  display: block;
+  font-size: 0.95rem;
+  margin-bottom: 0.2rem;
+}
+
+.mcp-card p {
+  margin: 0 0 0.25rem;
+}
+
+.mcp-card small {
+  color: var(--muted);
+  display: block;
+}
+
+.mcp-card code {
+  background: #eef2f7;
+  border-radius: 4px;
+  font-size: 0.82rem;
+  padding: 0.1rem 0.25rem;
 }
 
 iframe {
