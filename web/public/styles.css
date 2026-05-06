@@ -1,0 +1,616 @@
+:root {
+  color-scheme: light;
+  --bg: #f5f7fb;
+  --panel: #ffffff;
+  --text: #142033;
+  --muted: #667085;
+  --border: #d6dce8;
+  --accent: #2d6cdf;
+  --accent-soft: #e9f0ff;
+  --code-bg: #101828;
+  --success: #188f5d;
+  --warning: #c77700;
+  --purple: #7755d4;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  font-family:
+    Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
+    sans-serif;
+  min-width: 1320px;
+  overflow-y: auto;
+}
+
+button {
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--panel);
+  color: var(--text);
+  cursor: pointer;
+  font: inherit;
+  padding: 0.55rem 0.75rem;
+}
+
+button:hover,
+button.active {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+}
+
+.topbar {
+  align-items: center;
+  background: var(--panel);
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  gap: 1rem;
+  height: 56px;
+  justify-content: space-between;
+  padding: 0 1rem;
+}
+
+.topbar nav {
+  align-items: center;
+  display: flex;
+  gap: 0.5rem;
+}
+
+.credential-pill {
+  background: #f8fafc;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  color: var(--muted);
+  font-size: 0.82rem;
+  padding: 0.45rem 0.7rem;
+  white-space: nowrap;
+}
+
+.credential-pill strong {
+  color: var(--text);
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+}
+
+.muted {
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+
+.layout {
+  display: grid;
+  gap: 1rem;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-rows: calc(100vh - 88px) minmax(170px, auto) minmax(420px, auto);
+  min-height: calc(100vh - 56px);
+  min-width: 1320px;
+  padding: 1rem;
+}
+
+.architecture-pane,
+.instructions,
+.tips-panel,
+.workspace {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.architecture-pane {
+  display: flex;
+  grid-column: 1;
+  grid-row: 1;
+}
+
+.command-list {
+  display: grid;
+  gap: 0.5rem;
+  grid-auto-rows: minmax(36px, 1fr);
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  min-height: 0;
+  overflow: auto;
+}
+
+.command-list button {
+  align-items: center;
+  display: flex;
+  height: 100%;
+  justify-content: center;
+  min-height: 36px;
+  text-align: center;
+  width: 100%;
+}
+
+.lesson-heading {
+  background: var(--panel);
+  border-bottom: 1px solid var(--border);
+  padding: 1rem 1.25rem;
+  z-index: 1;
+}
+
+.lesson-heading h1 {
+  font-size: 1.25rem;
+  margin: 0 0 0.75rem;
+}
+
+.module-row {
+  display: flex;
+  gap: 0.5rem;
+  overflow-x: auto;
+  padding-bottom: 0.15rem;
+}
+
+.lesson-button {
+  flex: 0 0 auto;
+  text-align: left;
+  white-space: nowrap;
+}
+
+.instructions {
+  display: grid;
+  grid-column: 1 / -1;
+  grid-row: 3;
+  grid-template-rows: auto minmax(0, 1fr);
+  overflow: hidden;
+}
+
+.markdown {
+  line-height: 1.55;
+}
+
+#lesson-content {
+  overflow: auto;
+  padding: 1rem 1.25rem;
+}
+
+.markdown h1,
+.markdown h2,
+.markdown h3 {
+  line-height: 1.2;
+}
+
+.markdown code {
+  background: #eef2f7;
+  border-radius: 4px;
+  padding: 0.1rem 0.25rem;
+}
+
+.markdown pre,
+#command-output {
+  background: var(--code-bg);
+  border-radius: 10px;
+  color: #f8fafc;
+  overflow: auto;
+  padding: 1rem;
+}
+
+.markdown pre code {
+  background: transparent;
+  padding: 0;
+}
+
+.workspace {
+  grid-column: 2;
+  grid-row: 1;
+  position: relative;
+}
+
+.workspace-frame {
+  display: none;
+  height: 100%;
+  width: 100%;
+}
+
+.workspace-frame.active {
+  display: block;
+}
+
+.architecture-page {
+  display: grid;
+  grid-template-rows: minmax(0, 1fr);
+  height: 100%;
+  overflow: hidden;
+  padding: 0.85rem;
+  width: 100%;
+}
+
+.architecture-map {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+  overflow: auto;
+}
+
+.architecture-hero {
+  background: linear-gradient(135deg, #132238, #244c8f);
+  border-radius: 12px;
+  color: #ffffff;
+  margin-bottom: 0.75rem;
+  padding: 0.9rem;
+}
+
+.architecture-hero h2 {
+  font-size: 1.2rem;
+  margin: 0.25rem 0 0.5rem;
+}
+
+.architecture-hero p {
+  margin: 0;
+  max-width: 800px;
+}
+
+.eyebrow {
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.architecture-diagram {
+  align-items: stretch;
+  display: grid;
+  flex: 1 1 auto;
+  gap: 0.75rem;
+  grid-template-columns: fit-content(150px) minmax(0, 1fr);
+  margin-bottom: 0;
+  min-height: 0;
+}
+
+.cockpit-wrapper {
+  background: #e9f0ff;
+  border: 2px solid var(--accent);
+  border-radius: 12px;
+  box-shadow: 0 8px 24px rgba(45, 108, 223, 0.12);
+  margin-bottom: 0.75rem;
+  padding: 0.75rem;
+}
+
+.cockpit-wrapper strong,
+.cockpit-wrapper small,
+.cockpit-wrapper span {
+  display: block;
+}
+
+.cockpit-wrapper strong {
+  font-size: 1rem;
+  margin: 0.2rem 0;
+}
+
+.cockpit-wrapper small {
+  color: var(--muted);
+}
+
+.platform-stack {
+  display: grid;
+  gap: 0.45rem;
+  grid-template-rows: auto auto auto auto auto;
+}
+
+.tier,
+.management-column {
+  border: 2px dashed var(--border);
+  border-radius: 12px;
+  padding: 0.65rem;
+  position: relative;
+}
+
+.tier h3,
+.management-column h3 {
+  font-size: 1rem;
+  margin: 0 0 0.5rem;
+}
+
+.nested-tier h4 {
+  font-size: 0.86rem;
+  margin: 0 0 0.45rem;
+}
+
+.search-index-tier {
+  background: #edf8dd;
+  border-color: #91c96b;
+}
+
+.destination-tiers {
+  display: grid;
+  gap: 0.5rem;
+  grid-template-columns: minmax(0, 1fr) minmax(110px, 0.75fr);
+}
+
+.nested-tier {
+  border: 1px solid rgba(16, 24, 40, 0.16);
+  border-radius: 10px;
+  padding: 0.55rem;
+}
+
+.splunk-enterprise-tier {
+  background: rgba(255, 255, 255, 0.68);
+}
+
+.splunk-cloud-tier {
+  background: #e7f5ff;
+  border-color: #00a4fd;
+}
+
+.collection-tier {
+  background: #fff0dc;
+  border-color: #cc813c;
+}
+
+.data-source-tier {
+  background: #f4f7fb;
+  border-color: #98a2b3;
+}
+
+.management-column {
+  background: #f0e6ff;
+  border-color: var(--purple);
+  display: flex;
+  flex-direction: column;
+  gap: 0.55rem;
+}
+
+.tier-body {
+  align-items: stretch;
+  display: grid;
+  gap: 0.5rem;
+  grid-template-columns: 1fr;
+}
+
+.function-pair {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.cloud-destination {
+  border-color: #00a4fd;
+}
+
+.source-examples {
+  align-items: stretch;
+  grid-auto-rows: minmax(0, 1fr);
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.collection-flow {
+  align-items: center;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.node {
+  align-self: center;
+  background: #ffffff;
+  border: 2px solid var(--border);
+  border-radius: 10px;
+  color: inherit;
+  box-shadow: 0 8px 24px rgba(20, 32, 51, 0.08);
+  font: inherit;
+  min-height: auto;
+  padding: 0.7rem;
+  text-align: left;
+  width: 100%;
+}
+
+.node strong,
+.node small,
+.node span {
+  display: block;
+}
+
+.node strong {
+  font-size: 0.95rem;
+  margin: 0.25rem 0;
+}
+
+.node small {
+  color: var(--muted);
+}
+
+.config-list {
+  background: #f9fafb;
+  border: 1px solid #e4e7ec;
+  border-radius: 8px;
+  color: #344054;
+  font-size: 0.66rem;
+  line-height: 1.35;
+  margin: 0.45rem 0 0;
+  padding: 0.35rem 0.45rem 0.35rem 1.05rem;
+}
+
+.config-list li + li {
+  margin-top: 0.2rem;
+}
+
+.source-meta {
+  background: #f8fafc;
+  border: 1px solid #e4e7ec;
+  border-radius: 6px;
+  color: #344054;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+  font-size: 0.64rem;
+  margin-top: 0.35rem;
+  overflow-wrap: anywhere;
+  padding: 0.18rem 0.3rem;
+}
+
+.node-role {
+  color: var(--accent);
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.source {
+  border-color: var(--success);
+}
+
+.data-source-card {
+  align-self: stretch;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+.data-source-card:hover,
+.data-source-card:focus {
+  background: #f2fbf6;
+  border-color: var(--success);
+}
+
+.data-source-card::after {
+  color: var(--success);
+  content: "Open in Lab CLI";
+  display: block;
+  font-size: 0.66rem;
+  font-weight: 700;
+  margin-top: 0.5rem;
+  text-transform: uppercase;
+}
+
+.uf {
+  border-color: var(--accent);
+}
+
+.indexer {
+  border-color: var(--warning);
+}
+
+.deployment {
+  border-color: var(--purple);
+}
+
+.hf {
+  border-color: #b7791f;
+}
+
+.search-head {
+  border-color: #7ab857;
+}
+
+.vertical-flow,
+.collection-arrow,
+.management-link {
+  color: var(--muted);
+  font-size: 0.78rem;
+  font-weight: 700;
+  text-align: center;
+  text-transform: uppercase;
+}
+
+.vertical-flow::after {
+  color: var(--warning);
+  content: "  ↑";
+}
+
+.path-card {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  height: 100%;
+}
+
+.direct-path {
+  border-right: 1px dashed #cc813c;
+  padding-right: 0.5rem;
+}
+
+.path-arrow {
+  color: #8a5a00;
+  font-size: 0.7rem;
+  font-weight: 700;
+  text-align: center;
+  text-transform: uppercase;
+}
+
+.path-arrow::after {
+  content: " ↑";
+}
+
+.management-link {
+  border-top: 2px dashed var(--purple);
+  margin-top: auto;
+  padding-top: 0.75rem;
+}
+
+.management-link::before {
+  color: var(--purple);
+  content: "← ";
+}
+
+.tips-panel {
+  border-top: 1px solid var(--border);
+  grid-column: 1 / -1;
+  grid-row: 2;
+  overflow: auto;
+  padding-top: 0.45rem;
+  padding: 0.75rem 1rem;
+}
+
+.tips-panel h3 {
+  font-size: 0.95rem;
+  margin: 0.15rem 0 0.4rem;
+}
+
+.tip-list {
+  display: grid;
+  gap: 0.4rem;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+}
+
+.tip-card {
+  background: #ffffff;
+  border: 1px solid var(--border);
+  border-left: 4px solid var(--accent);
+  border-radius: 10px;
+  padding: 0.5rem;
+}
+
+.tip-card strong {
+  display: block;
+  font-size: 0.95rem;
+  margin-bottom: 0.2rem;
+}
+
+.tip-card p {
+  margin: 0 0 0.25rem;
+}
+
+.tip-card small {
+  color: var(--muted);
+  display: block;
+}
+
+iframe {
+  border: 0;
+  height: 100%;
+  width: 100%;
+}
+
+.terminal {
+  overflow: hidden;
+}
+
+.command-panel {
+  display: grid;
+  gap: 0.75rem;
+  grid-template-rows: minmax(0, 3fr) auto auto minmax(0, 1fr);
+  height: 100%;
+  padding: 1rem;
+}
+
+.command-panel h2,
+.command-panel p {
+  margin: 0;
+}
+
+#command-output {
+  min-height: 0;
+  overflow: auto;
+  white-space: pre-wrap;
+}

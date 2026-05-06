@@ -1,0 +1,318 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Splunk Learn Forwarding</title>
+    <link rel="stylesheet" href="/styles.css" />
+  </head>
+  <body>
+    <header class="topbar">
+      <div>
+        <strong>Splunk Learn Forwarding</strong>
+        <span class="muted">local lab cockpit</span>
+      </div>
+      <nav>
+        <span class="credential-pill">Login: <strong>admin</strong> / <strong>{{SPLUNK_PASSWORD}}</strong></span>
+        <button class="tab" data-view="splunk">Indexer/Search Head</button>
+        <button class="tab" data-view="deployment">Deployment Server</button>
+        <button class="tab" data-view="heavy">Heavy Forwarder</button>
+        <button class="tab active" data-view="terminal">Lab CLI</button>
+      </nav>
+    </header>
+
+    <main class="layout">
+      <aside class="architecture-pane">
+        <div class="architecture-page">
+          <section class="architecture-map">
+            <div class="architecture-hero">
+              <p class="eyebrow">Splunk Platform Architecture</p>
+              <h2>Forwarding Lab Topology</h2>
+              <p>
+                This lab maps data sources, forwarding paths, parsing, management, indexing,
+                and searching to local Docker services.
+              </p>
+            </div>
+
+            <section class="cockpit-wrapper">
+              <span class="node-role">Lab Wrapper</span>
+              <strong>Lesson Cockpit</strong>
+              <small>wraps guided lessons, Splunk panes, Lab CLI, and the topology map</small>
+            </section>
+
+            <div class="architecture-diagram" aria-label="Splunk forwarding lab architecture">
+              <aside class="management-column">
+                <h3>Management</h3>
+                <div class="node deployment">
+                  <span class="node-role">Agent Management</span>
+                  <strong>Deployment Server</strong>
+                  <small>serverclass.conf + deployment apps</small>
+                  <ul class="config-list" aria-label="Deployment server configuration files">
+                    <li>serverclass.conf</li>
+                    <li>deployment apps: app.conf, inputs.conf, outputs.conf, props.conf</li>
+                  </ul>
+                </div>
+                <div class="management-link">deploys configs to UF and HF</div>
+              </aside>
+
+              <div class="platform-stack">
+                <section class="tier search-index-tier">
+                  <h3>Search + Index Tier</h3>
+                  <div class="destination-tiers">
+                    <section class="nested-tier splunk-enterprise-tier">
+                      <h4>Splunk Enterprise</h4>
+                      <div class="tier-body function-pair">
+                        <div class="node search-head">
+                          <span class="node-role">Search Function</span>
+                          <strong>Search Head</strong>
+                          <small>queries dedicated source indexes</small>
+                          <ul class="config-list" aria-label="Search function configuration files">
+                            <li>props.conf for search-time knowledge</li>
+                            <li>web.conf for embedded lab access</li>
+                          </ul>
+                        </div>
+                        <div class="node indexer">
+                          <span class="node-role">Index Function</span>
+                          <strong>Indexer</strong>
+                          <small>receives on 9997 and stores events</small>
+                          <ul class="config-list" aria-label="Index function configuration files">
+                            <li>indexes.conf for source-specific indexes</li>
+                            <li>inputs.conf for Splunk-to-Splunk receiving</li>
+                            <li>props.conf for index-time parsing</li>
+                          </ul>
+                        </div>
+                      </div>
+                    </section>
+                    <section class="nested-tier splunk-cloud-tier">
+                      <h4>Splunk Cloud Tier</h4>
+                      <div class="node cloud-destination">
+                        <span class="node-role">Optional Cloud Destination</span>
+                        <strong>Splunk Cloud</strong>
+                        <small>HF can route selected inputs to Splunk Cloud using cloud-provided forwarding outputs</small>
+                        <ul class="config-list" aria-label="Splunk Cloud forwarding configuration files">
+                          <li>outputs.conf from the Splunk Cloud forwarding app</li>
+                          <li>Cloud-provided certificates and connection settings</li>
+                        </ul>
+                      </div>
+                    </section>
+                  </div>
+                </section>
+
+                <div class="vertical-flow ingest">indexed events flow up; HF can also forward selected data to Splunk Cloud</div>
+
+                <section class="tier collection-tier">
+                  <h3>Collection Tier</h3>
+                  <div class="tier-body collection-flow">
+                    <div class="path-card direct-path">
+                      <div class="path-arrow">UF forwards upstream</div>
+                      <div class="node uf">
+                        <span class="node-role">Universal Forwarder Direct Path</span>
+                        <strong>universal-forwarder</strong>
+                        <small>collects file/TCP/UDP inputs and forwards upstream</small>
+                        <ul class="config-list" aria-label="Direct universal forwarder configuration files">
+                          <li>inputs.conf for file, TCP, UDP, JSON, XML inputs</li>
+                          <li>outputs.conf for upstream forwarding</li>
+                          <li>deploymentclient.conf for DS phone-home</li>
+                        </ul>
+                      </div>
+                    </div>
+                    <div class="path-card heavy-path">
+                      <div class="node hf">
+                        <span class="node-role">Heavy Forwarder / Parsing</span>
+                        <strong>heavy-forwarder</strong>
+                        <small>props.conf parsing can happen here; outputs.conf can route data to Enterprise, Cloud, or both</small>
+                        <ul class="config-list" aria-label="Heavy forwarder configuration files">
+                          <li>inputs.conf for receiving and scripted inputs</li>
+                          <li>props.conf + transforms.conf for parsing and masking</li>
+                          <li>outputs.conf for Enterprise or Cloud routing</li>
+                        </ul>
+                      </div>
+                      <div class="path-arrow">UF forwards to HF</div>
+                      <div class="node uf">
+                        <span class="node-role">Universal Forwarder Via HF Path</span>
+                        <strong>universal-forwarder-via-heavy</strong>
+                        <small>collects file/TCP/UDP inputs and forwards to HF</small>
+                        <ul class="config-list" aria-label="Via-heavy universal forwarder configuration files">
+                          <li>inputs.conf for local collection</li>
+                          <li>outputs.conf to target the HF</li>
+                          <li>deploymentclient.conf for DS phone-home</li>
+                        </ul>
+                      </div>
+                    </div>
+                  </div>
+                </section>
+
+                <div class="vertical-flow ingest">file, tcp, udp, json, xml, hec, scripted, masked pii inputs</div>
+
+                <section class="tier data-source-tier">
+                  <h3>Data Source Tier</h3>
+                  <div class="tier-body source-examples">
+                    <button class="node source data-source-card" data-command="dataSourceFile">
+                      <span class="node-role">File Example</span>
+                      <strong>sample-log-source</strong>
+                      <small>writes app.log for file monitoring</small>
+                      <span class="source-meta">index=lab_file</span>
+                      <span class="source-meta">source=/var/log/lab/app.log</span>
+                      <span class="source-meta">sourcetype=lab:app</span>
+                      <span class="source-meta">config=inputs.conf</span>
+                    </button>
+                    <button class="node source data-source-card" data-command="dataSourceTcp">
+                      <span class="node-role">TCP Example</span>
+                      <strong>tcp-udp-source-direct</strong>
+                      <small>sends TCP 1514 events to a UF</small>
+                      <span class="source-meta">index=lab_tcp</span>
+                      <span class="source-meta">source=tcp:1514</span>
+                      <span class="source-meta">sourcetype=lab:tcp</span>
+                      <span class="source-meta">config=inputs.conf</span>
+                    </button>
+                    <button class="node source data-source-card" data-command="dataSourceUdp">
+                      <span class="node-role">UDP Example</span>
+                      <strong>tcp-udp-source-via-heavy</strong>
+                      <small>sends UDP 1515 events to a UF</small>
+                      <span class="source-meta">index=lab_udp</span>
+                      <span class="source-meta">source=udp:1515</span>
+                      <span class="source-meta">sourcetype=lab:udp</span>
+                      <span class="source-meta">config=inputs.conf</span>
+                    </button>
+                    <button class="node source data-source-card" data-command="dataSourceJson">
+                      <span class="node-role">JSON Example</span>
+                      <strong>structured-json-source</strong>
+                      <small>application events with JSON payloads</small>
+                      <span class="source-meta">index=lab_json</span>
+                      <span class="source-meta">source=/var/log/lab/events.json</span>
+                      <span class="source-meta">sourcetype=lab:json</span>
+                      <span class="source-meta">config=inputs.conf, props.conf</span>
+                    </button>
+                    <button class="node source data-source-card" data-command="dataSourceXml">
+                      <span class="node-role">XML Example</span>
+                      <strong>structured-xml-source</strong>
+                      <small>structured XML events for parsing lessons</small>
+                      <span class="source-meta">index=lab_xml</span>
+                      <span class="source-meta">source=/var/log/lab/events.xml</span>
+                      <span class="source-meta">sourcetype=lab:xml</span>
+                      <span class="source-meta">config=inputs.conf, props.conf</span>
+                    </button>
+                    <button class="node source data-source-card" data-command="dataSourceHec">
+                      <span class="node-role">HEC Example</span>
+                      <strong>http-event-collector-source</strong>
+                      <small>applications POST events to Splunk HTTP Event Collector</small>
+                      <span class="source-meta">index=lab_hec</span>
+                      <span class="source-meta">source=http-event-collector-source</span>
+                      <span class="source-meta">sourcetype=lab:hec</span>
+                      <span class="source-meta">config=HEC input, props.conf</span>
+                    </button>
+                    <button class="node source data-source-card" data-command="dataSourceScripted">
+                      <span class="node-role">Scripted Example</span>
+                      <strong>scripted-input-source</strong>
+                      <small>Python and bash scripts run as Splunk scripted inputs</small>
+                      <span class="source-meta">index=lab_scripted</span>
+                      <span class="source-meta">source=TA_scripted_inputs/bin/*</span>
+                      <span class="source-meta">sourcetype=lab:scripted:python, lab:scripted:bash</span>
+                      <span class="source-meta">config=inputs.conf, props.conf, bin/*</span>
+                    </button>
+                    <button class="node source data-source-card" data-command="dataSourceMasked">
+                      <span class="node-role">Masked PII Example</span>
+                      <strong>masked-pii-source</strong>
+                      <small>HF applies regex masking before data is stored</small>
+                      <span class="source-meta">index=lab_masked</span>
+                      <span class="source-meta">source=/var/log/lab/pii.log</span>
+                      <span class="source-meta">sourcetype=lab:masked</span>
+                      <span class="source-meta">config=inputs.conf, props.conf, transforms.conf</span>
+                    </button>
+                  </div>
+                </section>
+              </div>
+            </div>
+          </section>
+
+        </div>
+      </aside>
+
+      <section class="workspace">
+        <div class="workspace-frame" id="view-splunk">
+          <iframe src="/splunk/reset" title="Splunk indexer"></iframe>
+        </div>
+        <div class="workspace-frame" id="view-deployment">
+          <iframe src="/deployment/reset" title="Splunk deployment server"></iframe>
+        </div>
+        <div class="workspace-frame" id="view-heavy">
+          <iframe src="/heavy/reset" title="Splunk heavy forwarder"></iframe>
+        </div>
+        <div class="workspace-frame terminal active" id="view-terminal">
+          <div class="command-panel">
+            <pre id="command-output">Pick a command to run.</pre>
+            <h2>Lab CLI</h2>
+            <p class="muted">
+              These buttons run allow-listed lab commands only. They are for checks, reloads,
+              restarts, and Splunk CLI inspection used by the lessons.
+            </p>
+            <div id="command-list" class="command-list"></div>
+          </div>
+        </div>
+      </section>
+
+      <section class="tips-panel" aria-label="Splunk configuration tips">
+        <p class="eyebrow">Tips</p>
+        <h3>Key Configuration Files</h3>
+        <div class="tip-list">
+          <article class="tip-card">
+            <strong>inputs.conf</strong>
+            <p>Defines what Splunk reads or listens to.</p>
+            <small>
+              Applied on UFs for file, TCP, and UDP inputs; on the indexer and HF for
+              Splunk-to-Splunk receiving ports.
+            </small>
+          </article>
+          <article class="tip-card">
+            <strong>outputs.conf</strong>
+            <p>Defines where a forwarder sends events next.</p>
+            <small>
+              Applied on the direct UF to send to the indexer, on the via-HF UF to send to
+              the heavy forwarder, and on the HF to send parsed data to Splunk Enterprise or
+              Splunk Cloud target groups.
+            </small>
+          </article>
+          <article class="tip-card">
+            <strong>Splunk Cloud forwarding</strong>
+            <p>A single HF can route different inputs to different outputs.</p>
+            <small>
+              Separate HFs are optional, but often used when Cloud traffic needs separate
+              certificates, network paths, scaling, change control, or failure isolation.
+            </small>
+          </article>
+          <article class="tip-card">
+            <strong>props.conf</strong>
+            <p>Defines event parsing behavior such as timestamps, line breaking, and sourcetype handling.</p>
+            <small>
+              Applied where parsing occurs: on the indexer for direct UF data, and on the
+              heavy forwarder before it forwards parsed events.
+            </small>
+          </article>
+          <article class="tip-card">
+            <strong>transforms.conf</strong>
+            <p>Defines regex-based event rewrites, including masking sensitive values.</p>
+            <small>
+              In this lab, the HF applies transforms to `lab:masked` before forwarding to the
+              indexer, so stored events contain masked email and card values.
+            </small>
+          </article>
+        </div>
+      </section>
+
+      <section class="instructions">
+        <header class="lesson-heading">
+          <div>
+            <p class="eyebrow">Guided Lessons</p>
+            <h1>Lesson Modules</h1>
+          </div>
+          <div id="lesson-list" class="lesson-list module-row"></div>
+        </header>
+        <div id="lesson-content" class="markdown">
+          <p>Loading lessons...</p>
+        </div>
+      </section>
+    </main>
+
+    <script src="/app.js" type="module"></script>
+  </body>
+</html>

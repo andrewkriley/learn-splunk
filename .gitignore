@@ -1,0 +1,10 @@
+.env
+.DS_Store
+
+data/sample-logs/*
+!data/sample-logs/.gitkeep
+data/sample-logs-via-heavy/*
+!data/sample-logs-via-heavy/.gitkeep
+
+web/node_modules/
+

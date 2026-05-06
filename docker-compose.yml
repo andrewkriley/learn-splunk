@@ -1,0 +1,289 @@
+services:
+  splunk-indexer:
+    image: ${SPLUNK_IMAGE:?Set SPLUNK_IMAGE in .env}
+    platform: ${SPLUNK_PLATFORM:-linux/amd64}
+    hostname: splunk-indexer
+    container_name: splunk-indexer
+    environment:
+      SPLUNK_START_ARGS: --accept-license
+      SPLUNK_GENERAL_TERMS: ${SPLUNK_GENERAL_TERMS:?Set SPLUNK_GENERAL_TERMS in .env}
+      SPLUNK_PASSWORD: ${SPLUNK_PASSWORD:?Set SPLUNK_PASSWORD in .env}
+    ports:
+      - "8000:8000"
+      - "8088:8088"
+      - "8089:8089"
+      - "9997:9997"
+    volumes:
+      - ./splunk/indexer/apps/lab_index:/opt/splunk/etc/apps/lab_index
+      - ./splunk/common/apps/lab_web_embedding:/opt/splunk/etc/apps/lab_web_embedding
+      - ./splunk/indexer/apps/lab_web_proxy:/opt/splunk/etc/apps/lab_web_proxy
+    networks:
+      splunk-lab:
+        aliases:
+          - splunk-indexer
+
+  deployment-server:
+    image: ${SPLUNK_IMAGE:?Set SPLUNK_IMAGE in .env}
+    platform: ${SPLUNK_PLATFORM:-linux/amd64}
+    hostname: deployment-server
+    container_name: deployment-server
+    environment:
+      SPLUNK_START_ARGS: --accept-license
+      SPLUNK_GENERAL_TERMS: ${SPLUNK_GENERAL_TERMS:?Set SPLUNK_GENERAL_TERMS in .env}
+      SPLUNK_PASSWORD: ${SPLUNK_PASSWORD:?Set SPLUNK_PASSWORD in .env}
+      SPLUNK_ROLE: splunk_deployment_server
+    ports:
+      - "18000:8000"
+      - "18089:8089"
+    volumes:
+      - ./splunk/deployment-apps:/opt/splunk/etc/deployment-apps
+      - ./splunk/deployment-server/serverclass.conf:/opt/splunk/etc/system/local/serverclass.conf
+      - ./splunk/common/apps/lab_web_embedding:/opt/splunk/etc/apps/lab_web_embedding
+      - ./splunk/deployment-server/apps/lab_web_proxy:/opt/splunk/etc/apps/lab_web_proxy
+    depends_on:
+      - splunk-indexer
+    networks:
+      splunk-lab:
+        aliases:
+          - deployment-server
+
+  heavy-forwarder:
+    image: ${SPLUNK_IMAGE:?Set SPLUNK_IMAGE in .env}
+    platform: ${SPLUNK_PLATFORM:-linux/amd64}
+    hostname: heavy-forwarder
+    container_name: heavy-forwarder
+    environment:
+      SPLUNK_START_ARGS: --accept-license
+      SPLUNK_GENERAL_TERMS: ${SPLUNK_GENERAL_TERMS:?Set SPLUNK_GENERAL_TERMS in .env}
+      SPLUNK_PASSWORD: ${SPLUNK_PASSWORD:?Set SPLUNK_PASSWORD in .env}
+      SPLUNK_ROLE: splunk_heavy_forwarder
+      SPLUNK_INDEXER_URL: splunk-indexer
+      SPLUNK_DEPLOYMENT_SERVER: deployment-server
+      SPLUNK_ADD: tcp 1514
+    volumes:
+      - ./splunk/common/apps/lab_web_embedding:/opt/splunk/etc/apps/lab_web_embedding
+      - ./splunk/heavy-forwarder/apps/lab_web_proxy:/opt/splunk/etc/apps/lab_web_proxy
+      - ./splunk/deployment-apps/TA_common_outputs:/opt/splunk/etc/apps/TA_common_outputs
+      - ./splunk/deployment-apps/TA_heavy_forwarder_receiving:/opt/splunk/etc/apps/TA_heavy_forwarder_receiving
+      - ./splunk/deployment-apps/TA_heavy_forwarder_parsing:/opt/splunk/etc/apps/TA_heavy_forwarder_parsing
+      - ./splunk/deployment-apps/TA_scripted_inputs:/opt/splunk/etc/apps/TA_scripted_inputs
+    ports:
+      - "28000:8000"
+      - "1514:1514"
+    depends_on:
+      - splunk-indexer
+      - deployment-server
+    networks:
+      splunk-lab:
+        aliases:
+          - heavy-forwarder
+
+  universal-forwarder:
+    image: ${UF_IMAGE:?Set UF_IMAGE in .env}
+    platform: ${SPLUNK_PLATFORM:-linux/amd64}
+    hostname: universal-forwarder
+    container_name: universal-forwarder
+    environment:
+      SPLUNK_START_ARGS: --accept-license
+      SPLUNK_GENERAL_TERMS: ${SPLUNK_GENERAL_TERMS:?Set SPLUNK_GENERAL_TERMS in .env}
+      SPLUNK_PASSWORD: ${SPLUNK_PASSWORD:?Set SPLUNK_PASSWORD in .env}
+      SPLUNK_DEPLOYMENT_SERVER: deployment-server
+    volumes:
+      - ./data/sample-logs:/var/log/lab:ro
+      - ./splunk/deployment-apps/TA_common_outputs:/opt/splunkforwarder/etc/apps/TA_common_outputs
+      - ./splunk/deployment-apps/TA_linux_file_inputs:/opt/splunkforwarder/etc/apps/TA_linux_file_inputs
+      - ./splunk/deployment-apps/TA_network_inputs:/opt/splunkforwarder/etc/apps/TA_network_inputs
+    depends_on:
+      - deployment-server
+      - splunk-indexer
+      - sample-log-source
+    networks:
+      splunk-lab:
+        aliases:
+          - universal-forwarder
+
+  universal-forwarder-via-heavy:
+    image: ${UF_IMAGE:?Set UF_IMAGE in .env}
+    platform: ${SPLUNK_PLATFORM:-linux/amd64}
+    hostname: universal-forwarder-via-heavy
+    container_name: universal-forwarder-via-heavy
+    environment:
+      SPLUNK_START_ARGS: --accept-license
+      SPLUNK_GENERAL_TERMS: ${SPLUNK_GENERAL_TERMS:?Set SPLUNK_GENERAL_TERMS in .env}
+      SPLUNK_PASSWORD: ${SPLUNK_PASSWORD:?Set SPLUNK_PASSWORD in .env}
+      SPLUNK_DEPLOYMENT_SERVER: deployment-server
+    volumes:
+      - ./data/sample-logs-via-heavy:/var/log/lab:ro
+      - ./splunk/deployment-apps/TA_outputs_to_heavy:/opt/splunkforwarder/etc/apps/TA_outputs_to_heavy
+      - ./splunk/deployment-apps/TA_linux_file_inputs:/opt/splunkforwarder/etc/apps/TA_linux_file_inputs
+      - ./splunk/deployment-apps/TA_network_inputs:/opt/splunkforwarder/etc/apps/TA_network_inputs
+    depends_on:
+      - deployment-server
+      - heavy-forwarder
+      - sample-log-source-via-heavy
+    networks:
+      splunk-lab:
+        aliases:
+          - universal-forwarder-via-heavy
+
+  sample-log-source:
+    image: python:3.12-alpine
+    hostname: sample-log-source
+    container_name: sample-log-source
+    command: ["python", "/opt/lab/generate_logs.py", "/var/log/lab/app.log"]
+    volumes:
+      - ./scripts/generate_logs.py:/opt/lab/generate_logs.py:ro
+      - ./data/sample-logs:/var/log/lab
+    networks:
+      splunk-lab:
+        aliases:
+          - sample-log-source
+
+  sample-log-source-via-heavy:
+    image: python:3.12-alpine
+    hostname: sample-log-source-via-heavy
+    container_name: sample-log-source-via-heavy
+    command: ["python", "/opt/lab/generate_logs.py", "/var/log/lab/app.log"]
+    volumes:
+      - ./scripts/generate_logs.py:/opt/lab/generate_logs.py:ro
+      - ./data/sample-logs-via-heavy:/var/log/lab
+    networks:
+      splunk-lab:
+        aliases:
+          - sample-log-source-via-heavy
+
+  tcp-udp-source-direct:
+    image: python:3.12-alpine
+    hostname: tcp-udp-source-direct
+    container_name: tcp-udp-source-direct
+    command:
+      ["python", "/opt/lab/generate_network_events.py", "universal-forwarder", "1514", "1515"]
+    volumes:
+      - ./scripts/generate_network_events.py:/opt/lab/generate_network_events.py:ro
+    depends_on:
+      - universal-forwarder
+    networks:
+      splunk-lab:
+        aliases:
+          - tcp-udp-source-direct
+
+  tcp-udp-source-via-heavy:
+    image: python:3.12-alpine
+    hostname: tcp-udp-source-via-heavy
+    container_name: tcp-udp-source-via-heavy
+    command:
+      [
+        "python",
+        "/opt/lab/generate_network_events.py",
+        "universal-forwarder-via-heavy",
+        "1514",
+        "1515",
+      ]
+    volumes:
+      - ./scripts/generate_network_events.py:/opt/lab/generate_network_events.py:ro
+    depends_on:
+      - universal-forwarder-via-heavy
+    networks:
+      splunk-lab:
+        aliases:
+          - tcp-udp-source-via-heavy
+
+  structured-json-source:
+    image: python:3.12-alpine
+    hostname: structured-json-source
+    container_name: structured-json-source
+    command:
+      ["python", "/opt/lab/generate_structured_file_events.py", "json", "/var/log/lab/events.json"]
+    volumes:
+      - ./scripts/generate_structured_file_events.py:/opt/lab/generate_structured_file_events.py:ro
+      - ./data/sample-logs:/var/log/lab
+    depends_on:
+      - universal-forwarder
+    networks:
+      splunk-lab:
+        aliases:
+          - structured-json-source
+
+  structured-xml-source:
+    image: python:3.12-alpine
+    hostname: structured-xml-source
+    container_name: structured-xml-source
+    command:
+      ["python", "/opt/lab/generate_structured_file_events.py", "xml", "/var/log/lab/events.xml"]
+    volumes:
+      - ./scripts/generate_structured_file_events.py:/opt/lab/generate_structured_file_events.py:ro
+      - ./data/sample-logs-via-heavy:/var/log/lab
+    depends_on:
+      - universal-forwarder-via-heavy
+    networks:
+      splunk-lab:
+        aliases:
+          - structured-xml-source
+
+  masked-pii-source:
+    image: python:3.12-alpine
+    hostname: masked-pii-source
+    container_name: masked-pii-source
+    command: ["python", "/opt/lab/generate_pii_events.py", "/var/log/lab/pii.log"]
+    volumes:
+      - ./scripts/generate_pii_events.py:/opt/lab/generate_pii_events.py:ro
+      - ./data/sample-logs-via-heavy:/var/log/lab
+    depends_on:
+      - universal-forwarder-via-heavy
+    networks:
+      splunk-lab:
+        aliases:
+          - masked-pii-source
+
+  http-event-collector-source:
+    image: python:3.12-alpine
+    hostname: http-event-collector-source
+    container_name: http-event-collector-source
+    command: ["python", "/opt/lab/generate_hec_events.py"]
+    environment:
+      SPLUNK_PASSWORD: ${SPLUNK_PASSWORD:?Set SPLUNK_PASSWORD in .env}
+      SPLUNK_MANAGEMENT_URL: https://splunk-indexer:8089
+      SPLUNK_HEC_URL: https://splunk-indexer:8088/services/collector/event
+    volumes:
+      - ./scripts/generate_hec_events.py:/opt/lab/generate_hec_events.py:ro
+    depends_on:
+      - splunk-indexer
+    networks:
+      splunk-lab:
+        aliases:
+          - http-event-collector-source
+
+  lesson-web:
+    build:
+      context: ./web
+    hostname: lesson-web
+    container_name: lesson-web
+    environment:
+      SPLUNK_PASSWORD: ${SPLUNK_PASSWORD:?Set SPLUNK_PASSWORD in .env}
+      SPLUNK_MANAGEMENT_URL: https://splunk-indexer:8089
+      LAB_ROOT: /workspace
+    ports:
+      - "3000:3000"
+    volumes:
+      - .:/workspace
+      - ${DOCKER_SOCKET:-/var/run/docker.sock}:/var/run/docker.sock
+    depends_on:
+      - splunk-indexer
+      - deployment-server
+      - heavy-forwarder
+      - universal-forwarder
+      - universal-forwarder-via-heavy
+      - structured-json-source
+      - structured-xml-source
+      - masked-pii-source
+      - http-event-collector-source
+    networks:
+      splunk-lab:
+        aliases:
+          - lesson-web
+
+networks:
+  splunk-lab:
+    driver: bridge
+    attachable: true
+
