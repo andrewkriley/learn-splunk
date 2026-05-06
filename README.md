@@ -138,5 +138,4 @@ python3 scripts/validate_lab.py
 - The compose file uses official Splunk container images and keeps image names configurable in `.env`.
 - Splunk 10.x requires `SPLUNK_GENERAL_TERMS=--accept-sgt-current-at-splunk-com`.
 - The deployment server distributes apps from `splunk/deployment-apps`.
-- The indexer has a local app under `splunk/indexer/apps/lab_index` to create the `lab` index and enable receiving on port `9997`.
-
+- The indexer has a local app under `splunk/indexer/apps/lab_index` to create dedicated data-source indexes and enable receiving on port `9997`.
