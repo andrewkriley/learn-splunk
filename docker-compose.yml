@@ -1,18 +1,19 @@
+name: ${COMPOSE_PROJECT_NAME:-learn-splunk}
+
 services:
   splunk-indexer:
     image: ${SPLUNK_IMAGE:?Set SPLUNK_IMAGE in .env}
     platform: ${SPLUNK_PLATFORM:-linux/amd64}
     hostname: splunk-indexer
-    container_name: splunk-indexer
     environment:
       SPLUNK_START_ARGS: --accept-license
       SPLUNK_GENERAL_TERMS: ${SPLUNK_GENERAL_TERMS:?Set SPLUNK_GENERAL_TERMS in .env}
       SPLUNK_PASSWORD: ${SPLUNK_PASSWORD:?Set SPLUNK_PASSWORD in .env}
     ports:
-      - "8000:8000"
-      - "8088:8088"
-      - "8089:8089"
-      - "9997:9997"
+      - "${SPLUNK_WEB_PORT:-8000}:8000"
+      - "${SPLUNK_HEC_PORT:-8088}:8088"
+      - "${SPLUNK_MANAGEMENT_PORT:-8089}:8089"
+      - "${SPLUNK_RECEIVING_PORT:-9997}:9997"
     volumes:
       - ./splunk/indexer/apps/lab_index:/opt/splunk/etc/apps/lab_index
       - ./splunk/indexer/apps/buttercup_app:/opt/splunk/etc/apps/buttercup_app
@@ -27,15 +28,14 @@ services:
     image: ${SPLUNK_IMAGE:?Set SPLUNK_IMAGE in .env}
     platform: ${SPLUNK_PLATFORM:-linux/amd64}
     hostname: deployment-server
-    container_name: deployment-server
     environment:
       SPLUNK_START_ARGS: --accept-license
       SPLUNK_GENERAL_TERMS: ${SPLUNK_GENERAL_TERMS:?Set SPLUNK_GENERAL_TERMS in .env}
       SPLUNK_PASSWORD: ${SPLUNK_PASSWORD:?Set SPLUNK_PASSWORD in .env}
       SPLUNK_ROLE: splunk_deployment_server
     ports:
-      - "18000:8000"
-      - "18089:8089"
+      - "${DEPLOYMENT_WEB_PORT:-18000}:8000"
+      - "${DEPLOYMENT_MANAGEMENT_PORT:-18089}:8089"
     volumes:
       - ./splunk/deployment-apps:/opt/splunk/etc/deployment-apps
       - ./splunk/deployment-server/serverclass.conf:/opt/splunk/etc/system/local/serverclass.conf
@@ -52,7 +52,6 @@ services:
     image: ${SPLUNK_IMAGE:?Set SPLUNK_IMAGE in .env}
     platform: ${SPLUNK_PLATFORM:-linux/amd64}
     hostname: heavy-forwarder
-    container_name: heavy-forwarder
     environment:
       SPLUNK_START_ARGS: --accept-license
       SPLUNK_GENERAL_TERMS: ${SPLUNK_GENERAL_TERMS:?Set SPLUNK_GENERAL_TERMS in .env}
@@ -69,8 +68,8 @@ services:
       - ./splunk/deployment-apps/TA_heavy_forwarder_parsing:/opt/splunk/etc/apps/TA_heavy_forwarder_parsing
       - ./splunk/deployment-apps/TA_scripted_inputs:/opt/splunk/etc/apps/TA_scripted_inputs
     ports:
-      - "28000:8000"
-      - "1514:1514"
+      - "${HEAVY_WEB_PORT:-28000}:8000"
+      - "${HEAVY_TCP_PORT:-1514}:1514"
     depends_on:
       - splunk-indexer
       - deployment-server
@@ -83,7 +82,6 @@ services:
     image: ${UF_IMAGE:?Set UF_IMAGE in .env}
     platform: ${SPLUNK_PLATFORM:-linux/amd64}
     hostname: universal-forwarder
-    container_name: universal-forwarder
     environment:
       SPLUNK_START_ARGS: --accept-license
       SPLUNK_GENERAL_TERMS: ${SPLUNK_GENERAL_TERMS:?Set SPLUNK_GENERAL_TERMS in .env}
@@ -107,7 +105,6 @@ services:
     image: ${UF_IMAGE:?Set UF_IMAGE in .env}
     platform: ${SPLUNK_PLATFORM:-linux/amd64}
     hostname: universal-forwarder-via-heavy
-    container_name: universal-forwarder-via-heavy
     environment:
       SPLUNK_START_ARGS: --accept-license
       SPLUNK_GENERAL_TERMS: ${SPLUNK_GENERAL_TERMS:?Set SPLUNK_GENERAL_TERMS in .env}
@@ -130,7 +127,6 @@ services:
   sample-log-source:
     image: python:3.12-alpine
     hostname: sample-log-source
-    container_name: sample-log-source
     command: ["python", "/opt/lab/generate_logs.py", "/var/log/lab/app.log"]
     volumes:
       - ./scripts/generate_logs.py:/opt/lab/generate_logs.py:ro
@@ -143,7 +139,6 @@ services:
   sample-log-source-via-heavy:
     image: python:3.12-alpine
     hostname: sample-log-source-via-heavy
-    container_name: sample-log-source-via-heavy
     command: ["python", "/opt/lab/generate_logs.py", "/var/log/lab/app.log"]
     volumes:
       - ./scripts/generate_logs.py:/opt/lab/generate_logs.py:ro
@@ -156,7 +151,6 @@ services:
   tcp-udp-source-direct:
     image: python:3.12-alpine
     hostname: tcp-udp-source-direct
-    container_name: tcp-udp-source-direct
     command:
       ["python", "/opt/lab/generate_network_events.py", "universal-forwarder", "1514", "1515"]
     volumes:
@@ -171,7 +165,6 @@ services:
   tcp-udp-source-via-heavy:
     image: python:3.12-alpine
     hostname: tcp-udp-source-via-heavy
-    container_name: tcp-udp-source-via-heavy
     command:
       [
         "python",
@@ -192,7 +185,6 @@ services:
   structured-json-source:
     image: python:3.12-alpine
     hostname: structured-json-source
-    container_name: structured-json-source
     command:
       ["python", "/opt/lab/generate_structured_file_events.py", "json", "/var/log/lab/events.json"]
     volumes:
@@ -208,7 +200,6 @@ services:
   open-telemetry-source:
     image: python:3.12-alpine
     hostname: open-telemetry-source
-    container_name: open-telemetry-source
     command: ["python", "/opt/lab/generate_otel_events.py", "/var/log/lab/otel.json"]
     volumes:
       - ./scripts/generate_otel_events.py:/opt/lab/generate_otel_events.py:ro
@@ -223,7 +214,6 @@ services:
   structured-xml-source:
     image: python:3.12-alpine
     hostname: structured-xml-source
-    container_name: structured-xml-source
     command:
       ["python", "/opt/lab/generate_structured_file_events.py", "xml", "/var/log/lab/events.xml"]
     volumes:
@@ -239,7 +229,6 @@ services:
   masked-pii-source:
     image: python:3.12-alpine
     hostname: masked-pii-source
-    container_name: masked-pii-source
     command: ["python", "/opt/lab/generate_pii_events.py", "/var/log/lab/pii.log"]
     volumes:
       - ./scripts/generate_pii_events.py:/opt/lab/generate_pii_events.py:ro
@@ -254,7 +243,6 @@ services:
   http-event-collector-source:
     image: python:3.12-alpine
     hostname: http-event-collector-source
-    container_name: http-event-collector-source
     command: ["python", "/opt/lab/generate_hec_events.py"]
     environment:
       SPLUNK_PASSWORD: ${SPLUNK_PASSWORD:?Set SPLUNK_PASSWORD in .env}
@@ -273,7 +261,6 @@ services:
     build:
       context: ./mcp
     hostname: splunk-mcp
-    container_name: splunk-mcp
     environment:
       TRANSPORT: http
       HOST: 0.0.0.0
@@ -290,8 +277,10 @@ services:
       SPL_RISK_TOLERANCE: 75
       SPL_SAFE_TIMERANGE: 24h
       SPL_SANITIZE_OUTPUT: "true"
+      SPLUNK_CONNECT_RETRIES: ${SPLUNK_CONNECT_RETRIES:-30}
+      SPLUNK_CONNECT_RETRY_MS: ${SPLUNK_CONNECT_RETRY_MS:-10000}
     ports:
-      - "127.0.0.1:8050:8050"
+      - "${MCP_BIND_HOST:-127.0.0.1}:${MCP_PORT:-8050}:8050"
     depends_on:
       - splunk-indexer
     networks:
@@ -303,13 +292,13 @@ services:
     build:
       context: ./web
     hostname: lesson-web
-    container_name: lesson-web
     environment:
       SPLUNK_PASSWORD: ${SPLUNK_PASSWORD:?Set SPLUNK_PASSWORD in .env}
       SPLUNK_MANAGEMENT_URL: https://splunk-indexer:8089
       LAB_ROOT: /workspace
+      COMPOSE_PROJECT_NAME: ${COMPOSE_PROJECT_NAME:-learn-splunk}
     ports:
-      - "3000:3000"
+      - "${LESSON_WEB_PORT:-3000}:3000"
     volumes:
       - .:/workspace
       - ${DOCKER_SOCKET:-/var/run/docker.sock}:/var/run/docker.sock

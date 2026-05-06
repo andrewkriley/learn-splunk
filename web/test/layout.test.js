@@ -41,6 +41,14 @@ test("cockpit CSS includes visual architecture diagram styles", async () => {
   assert.match(css, /\.mcp-panel/);
   assert.match(css, /\.mcp-card-list/);
   assert.match(css, /\.mcp-card/);
+  assert.match(css, /\.mcp-explorer/);
+  assert.match(css, /\.mcp-explorer-grid/);
+  assert.match(css, /\.mcp-tool-list/);
+  assert.match(css, /\.mcp-result/);
+  assert.match(css, /\.lab-status-strip/);
+  assert.match(css, /\.status-badge/);
+  assert.match(css, /\.guide-code-block/);
+  assert.match(css, /\.copy-btn/);
   assert.match(css, /\.tip-list/);
   assert.match(css, /\.tip-card/);
   assert.match(css, /\.architecture-diagram/);

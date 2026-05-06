@@ -8,6 +8,7 @@ import { fileURLToPath } from "node:url";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const md = new MarkdownIt({ html: false, linkify: true, typographer: true });
+const MCP_ALLOWED_TOOLS = new Set(["validate_spl", "get_config", "get_indexes", "search_oneshot"]);
 
 export function createApp(options = {}) {
   const app = express();
@@ -15,6 +16,82 @@ export function createApp(options = {}) {
   const lessonsDir = options.lessonsDir || path.join(labRoot, "lessons");
   const publicDir = options.publicDir || path.join(__dirname, "public");
   const splunkPassword = options.splunkPassword ?? process.env.SPLUNK_PASSWORD ?? "";
+  const mcpUrl = options.mcpUrl || process.env.MCP_URL || "http://splunk-mcp:8050/mcp";
+  const mcpHealthUrl = options.mcpHealthUrl || process.env.MCP_HEALTH_URL || "http://splunk-mcp:8050/healthz";
+  const request = options.fetch || globalThis.fetch;
+
+  function parseSseMessage(text) {
+    const dataLine = text
+      .split("\n")
+      .map((line) => line.trim())
+      .find((line) => line.startsWith("data:"));
+    if (!dataLine) {
+      throw new Error("MCP response did not include an SSE data payload");
+    }
+    return JSON.parse(dataLine.replace(/^data:\s*/, ""));
+  }
+
+  async function callMcp(payload, sessionId = "") {
+    const headers = {
+      Accept: "application/json, text/event-stream",
+      "Content-Type": "application/json",
+    };
+    if (sessionId) {
+      headers["mcp-session-id"] = sessionId;
+    }
+    const response = await request(mcpUrl, {
+      method: "POST",
+      headers,
+      body: JSON.stringify(payload),
+    });
+    const body = parseSseMessage(await response.text());
+    if (!response.ok || body.error) {
+      throw new Error(body.error?.message || `MCP request failed with ${response.status}`);
+    }
+    return { body, sessionId: response.headers.get("mcp-session-id") || sessionId };
+  }
+
+  async function withMcpSession(callback) {
+    const initialized = await callMcp({
+      jsonrpc: "2.0",
+      id: 1,
+      method: "initialize",
+      params: {
+        protocolVersion: "2024-11-05",
+        capabilities: {},
+        clientInfo: { name: "learn-splunk-cockpit", version: "0.1.0" },
+      },
+    });
+    return callback(initialized.sessionId);
+  }
+
+  function normalizeTool(tool) {
+    return {
+      name: tool.name,
+      description: tool.description || "",
+      inputSchema: tool.inputSchema || tool.input_schema || { type: "object", properties: {} },
+    };
+  }
+
+  async function checkHttpService(name, url) {
+    const started = Date.now();
+    try {
+      const response = await request(url, { method: "GET" });
+      return {
+        name,
+        status: response.ok || response.status < 500 ? "ok" : "degraded",
+        httpStatus: response.status,
+        latencyMs: Date.now() - started,
+      };
+    } catch (error) {
+      return {
+        name,
+        status: "down",
+        message: error.message,
+        latencyMs: null,
+      };
+    }
+  }
 
   function rewriteCookiePath(cookie, prefix) {
     if (!prefix) {
@@ -417,7 +494,7 @@ export function createApp(options = {}) {
           cwd: labRoot,
           timeout: 60_000,
           maxBuffer: 1024 * 1024,
-          env: { ...process.env, COMPOSE_PROJECT_NAME: "splunk-learn-forwarding" },
+          env: { ...process.env, COMPOSE_PROJECT_NAME: process.env.COMPOSE_PROJECT_NAME || "learn-splunk" },
         },
         (error, stdout, stderr) => {
           resolve({
@@ -479,6 +556,64 @@ export function createApp(options = {}) {
         label: command.label,
       })),
     });
+  });
+
+  app.get("/api/mcp/tools", async (_req, res) => {
+    try {
+      const result = await withMcpSession(async (sessionId) =>
+        callMcp({ jsonrpc: "2.0", id: 2, method: "tools/list", params: {} }, sessionId),
+      );
+      const tools = (result.body.result?.tools || [])
+        .map(normalizeTool)
+        .filter((tool) => MCP_ALLOWED_TOOLS.has(tool.name));
+      res.json({ tools });
+    } catch (error) {
+      res.status(502).json({ error: error.message });
+    }
+  });
+
+  app.post("/api/mcp/tools/call", async (req, res) => {
+    const toolName = req.body?.name;
+    const toolArguments = req.body?.arguments || {};
+    if (!MCP_ALLOWED_TOOLS.has(toolName)) {
+      res.status(404).json({ error: "Unsupported MCP tool" });
+      return;
+    }
+    if (typeof toolArguments !== "object" || Array.isArray(toolArguments)) {
+      res.status(400).json({ error: "MCP tool arguments must be an object" });
+      return;
+    }
+
+    try {
+      const result = await withMcpSession(async (sessionId) =>
+        callMcp(
+          {
+            jsonrpc: "2.0",
+            id: 3,
+            method: "tools/call",
+            params: { name: toolName, arguments: toolArguments },
+          },
+          sessionId,
+        ),
+      );
+      res.json({ tool: toolName, result: result.body.result });
+    } catch (error) {
+      res.status(502).json({ error: error.message });
+    }
+  });
+
+  app.get("/api/lab/status", async (_req, res) => {
+    const services = await Promise.all([
+      Promise.resolve({ name: "lesson-web", status: "ok", httpStatus: 200, latencyMs: 0 }),
+      checkHttpService("splunk-mcp", mcpHealthUrl),
+      checkHttpService("indexer", options.splunkTarget || "http://splunk-indexer:8000/en-US/account/login"),
+      checkHttpService(
+        "deployment",
+        options.deploymentTarget || "http://deployment-server:8000/en-US/account/login",
+      ),
+      checkHttpService("heavy", options.heavyTarget || "http://heavy-forwarder:8000/en-US/account/login"),
+    ]);
+    res.json({ services });
   });
 
   app.post("/api/commands/:id", async (req, res) => {

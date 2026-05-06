@@ -8,3 +8,6 @@ data/sample-logs-via-heavy/*
 
 web/node_modules/
 
+# Splunk mutates app install metadata at runtime.
+splunk/**/metadata/local.meta
+

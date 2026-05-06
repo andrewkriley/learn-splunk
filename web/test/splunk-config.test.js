@@ -36,11 +36,35 @@ test("compose defines the local Learn Splunk MCP service", async () => {
   assert.match(compose, /SPLUNK_HOST:\s*splunk-indexer/);
   assert.match(compose, /SPLUNK_PORT:\s*8089/);
   assert.match(compose, /SPLUNK_PASSWORD:\s*\$\{SPLUNK_PASSWORD:\?Set SPLUNK_PASSWORD in \.env\}/);
-  assert.match(compose, /127\.0\.0\.1:8050:8050/);
+  assert.match(compose, /\$\{MCP_BIND_HOST:-127\.0\.0\.1\}:\$\{MCP_PORT:-8050\}:8050/);
   assert.match(compose, /lesson-web:[\s\S]*depends_on:[\s\S]*splunk-mcp/);
   assert.match(mcpConfig, /"learn-splunk"/);
   assert.match(mcpConfig, /"url": "http:\/\/localhost:8050\/mcp"/);
   assert.match(dockerfile, /SPLUNK_MCP_SERVER2_REF=fac6cbb37be057a68607642d8d60d9c19ba5a060/);
+});
+
+test("compose avoids clone-specific container names and parameterizes host ports", async () => {
+  const compose = await readFile(path.join(repoRoot, "docker-compose.yml"), "utf-8");
+  const envExample = await readFile(path.join(repoRoot, ".env.example"), "utf-8");
+
+  assert.match(compose, /name:\s*\$\{COMPOSE_PROJECT_NAME:-learn-splunk\}/);
+  assert.doesNotMatch(compose, /container_name:/);
+  assert.match(compose, /\$\{LESSON_WEB_PORT:-3000\}:3000/);
+  assert.match(compose, /\$\{SPLUNK_WEB_PORT:-8000\}:8000/);
+  assert.match(compose, /\$\{DEPLOYMENT_WEB_PORT:-18000\}:8000/);
+  assert.match(compose, /\$\{HEAVY_WEB_PORT:-28000\}:8000/);
+  assert.match(compose, /COMPOSE_PROJECT_NAME:\s*\$\{COMPOSE_PROJECT_NAME:-learn-splunk\}/);
+  assert.match(envExample, /COMPOSE_PROJECT_NAME=learn-splunk/);
+  assert.match(envExample, /DOCKER_SOCKET=\/var\/run\/docker\.sock/);
+  assert.doesNotMatch(envExample, /\/Users\/andreril/);
+});
+
+test("web Dockerfile uses deterministic dependency install", async () => {
+  const dockerfile = await readFile(path.join(repoRoot, "web/Dockerfile"), "utf-8");
+  const packageJson = await readFile(path.join(repoRoot, "web/package.json"), "utf-8");
+
+  assert.match(dockerfile, /npm ci --omit=dev/);
+  assert.doesNotMatch(packageJson, /"latest"/);
 });
 
 test("Splunk apps use Learn Splunk as the author name", async () => {

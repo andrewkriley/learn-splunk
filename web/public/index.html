@@ -12,6 +12,9 @@
         <strong>Learn Splunk</strong>
         <span class="muted">local lab cockpit</span>
       </div>
+      <div id="lab-status-strip" class="lab-status-strip" aria-label="Lab service status">
+        <span class="status-badge checking">Checking services...</span>
+      </div>
       <nav>
         <span class="credential-pill">Login: <strong>admin</strong> / <strong>{{SPLUNK_PASSWORD}}</strong></span>
         <button class="tab" data-view="splunk">Indexer/Search Head</button>
@@ -353,6 +356,29 @@
               from `.env` and are not committed.
             </small>
           </article>
+        </div>
+        <div class="mcp-explorer" aria-label="MCP tool explorer">
+          <div class="mcp-explorer-header">
+            <div>
+              <strong>Explore MCP Tools</strong>
+              <small>Curated, browser-safe calls into the local `learn-splunk` MCP server.</small>
+            </div>
+            <div class="quick-query-list" aria-label="Quick SPL examples">
+              <button type="button" data-mcp-query="index=lab_otel sourcetype=lab:otel | head 5">lab_otel</button>
+              <button type="button" data-mcp-query="index=buttercup sourcetype=buttercup_sales | stats sum(revenue) by vendor">buttercup</button>
+              <button type="button" data-mcp-query="index=lab_hec sourcetype=lab:hec | head 5">lab_hec</button>
+            </div>
+          </div>
+          <div class="mcp-explorer-grid">
+            <div id="mcp-tool-list" class="mcp-tool-list">Loading MCP tools...</div>
+            <div class="mcp-tool-workspace">
+              <form id="mcp-tool-form" class="mcp-tool-form"></form>
+              <div class="mcp-run-bar">
+                <button id="mcp-run-tool" type="button" disabled>Run Tool</button>
+              </div>
+              <pre id="mcp-result" class="mcp-result">Select a tool to begin.</pre>
+            </div>
+          </div>
         </div>
       </section>
 

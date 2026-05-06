@@ -23,6 +23,8 @@ const config = {
   spl_risk_tolerance: parseInt(process.env.SPL_RISK_TOLERANCE || "75", 10),
   spl_safe_timerange: process.env.SPL_SAFE_TIMERANGE || "24h",
   spl_sanitize_output: process.env.SPL_SANITIZE_OUTPUT?.toLowerCase() !== "false",
+  splunk_connect_retries: parseInt(process.env.SPLUNK_CONNECT_RETRIES || "30", 10),
+  splunk_connect_retry_ms: parseInt(process.env.SPLUNK_CONNECT_RETRY_MS || "10000", 10),
 };
 
 let splunkClient: SplunkClient | null = null;
@@ -86,9 +88,23 @@ function normalizeQuery(query: string): string {
 }
 
 async function initializeSplunkClient() {
-  splunkClient = new SplunkClient(config);
-  await splunkClient.connect();
-  console.log("Splunk client connected");
+  for (let attempt = 1; attempt <= config.splunk_connect_retries; attempt += 1) {
+    try {
+      splunkClient = new SplunkClient(config);
+      await splunkClient.connect();
+      console.log("Splunk client connected");
+      return;
+    } catch (error) {
+      splunkClient = null;
+      if (attempt === config.splunk_connect_retries) {
+        throw error;
+      }
+      console.warn(
+        `Splunk client connection attempt ${attempt}/${config.splunk_connect_retries} failed; retrying in ${config.splunk_connect_retry_ms}ms`,
+      );
+      await new Promise((resolve) => setTimeout(resolve, config.splunk_connect_retry_ms));
+    }
+  }
 }
 
 function createMcpServer(): McpServer {

@@ -24,6 +24,8 @@ Lab URLs:
 - `scripts/generate_logs.py`
 - `data/sample-logs/app.log`
 
+> Tip: click the **File Example** card in the architecture pane to open the related files and live `btool` output in Lab CLI.
+
 The universal forwarder mounts `data/sample-logs` as `/var/log/lab`. The deployment server sends this input to the universal forwarder:
 
 ```ini
@@ -37,28 +39,40 @@ followTail = 0
 
 ## Exercise
 
+### Step 1: Start and inspect the source
+
 1. Start the lab.
 2. Wait for `data/sample-logs/app.log` to appear.
-3. Search:
+
+### Step 2: Search the dedicated index
+
+Search:
 
    ```spl
    index=lab_file sourcetype=lab:app
    ```
 
-4. Change `sourcetype = lab:app` to `sourcetype = lab:renamed`.
-5. Reload the deployment server:
+### Step 3: Make a metadata change
+
+Change `sourcetype = lab:app` to `sourcetype = lab:renamed`, then reload the deployment server:
 
    ```sh
    docker compose exec deployment-server /opt/splunk/bin/splunk reload deploy-server
    ```
 
-6. Restart the universal forwarder:
+Restart the universal forwarder:
 
    ```sh
    docker compose restart universal-forwarder
    ```
 
-7. Search both sourcetypes and observe the change.
+Search both sourcetypes and observe the change.
+
+| Metadata field | Lab value | Where it is set |
+|---|---|---|
+| `index` | `lab_file` | `inputs.conf` |
+| `source` | `/var/log/lab/app.log` | monitor stanza path |
+| `sourcetype` | `lab:app` | `inputs.conf` |
 
 ## What To Learn
 

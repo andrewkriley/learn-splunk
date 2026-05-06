@@ -20,6 +20,8 @@ Lab URLs:
 
 ## `outputs.conf`
 
+> Routing rule of thumb: `inputs.conf` decides what is collected, `outputs.conf` decides where it goes next, and `props.conf` decides how events are parsed.
+
 Forwarders use `outputs.conf` to decide where to send data:
 
 ```ini
@@ -82,6 +84,13 @@ index=lab_file sourcetype=lab:app
 ```
 
 Look at `_time`, `host`, `source`, and `sourcetype`.
+
+| File | Primary question it answers |
+|---|---|
+| `inputs.conf` | What should Splunk collect or listen to? |
+| `outputs.conf` | Where should a forwarder send data? |
+| `props.conf` | How should events be broken, timestamped, and typed? |
+| `transforms.conf` | Should fields or raw event text be rewritten before storage? |
 
 ## What To Learn
 

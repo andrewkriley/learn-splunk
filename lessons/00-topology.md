@@ -4,6 +4,8 @@
 
 Understand the moving parts before changing configuration.
 
+> Guide pattern: start with the topology, then use the Lab CLI and Splunk Web side-by-side. Copy buttons appear on command and SPL snippets in the cockpit.
+
 ## Login Details
 
 Use these credentials for every Splunk web UI in this lab:
@@ -45,13 +47,17 @@ The heavy forwarder also runs in the lab. It is configured as a deployment clien
 
 ## Inspect
 
-Run:
+### Step 1: Check the containers
+
+Run this from the Lab CLI or your terminal:
 
 ```sh
 docker compose ps
 ```
 
-Then open Splunk Web at <http://localhost:8000> and search:
+### Step 2: Confirm Splunk is searchable
+
+Open Splunk Web in the cockpit and search:
 
 ```spl
 index=_internal
@@ -65,4 +71,13 @@ You should see internal logs from multiple Splunk hosts.
 - A receiver accepts data, usually on port `9997`.
 - A deployment server distributes configuration and apps to deployment clients.
 - Splunk configuration lives in layered app directories, not in one global file.
+
+## Quick Reference
+
+| Role | Container | Why it matters |
+|---|---|---|
+| Search and index | `splunk-indexer` | Stores lab indexes and provides the search UI. |
+| Management | `deployment-server` | Sends apps and server classes to forwarders. |
+| Collection | `universal-forwarder` | Demonstrates lightweight collection and forwarding. |
+| Parsing/routing | `heavy-forwarder` | Demonstrates parsing, masking, and optional Cloud routing. |
 

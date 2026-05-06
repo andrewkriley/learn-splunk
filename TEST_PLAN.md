@@ -19,8 +19,13 @@ Current coverage:
 - Lesson API lists only Markdown lessons.
 - Lesson API renders Markdown to HTML.
 - Browser lesson app replaces `Loading lessons...` with the first lesson.
+- Browser lesson app adds copy buttons to command and SPL code blocks.
+- Browser cockpit loads curated MCP tool schemas and can call allow-listed tools.
 - Host-based Splunk proxy runs before static lesson assets.
 - Command API rejects commands outside the allow-list.
+- Lab status API reports service reachability without Docker socket access.
+- Compose config avoids fixed container names and exposes project/port settings
+  through `.env`.
 
 These tests should catch common cockpit regressions before Docker/Splunk is
 involved.
@@ -35,6 +40,8 @@ python3 -m py_compile scripts/generate_logs.py scripts/validate_lab.py
 ```
 
 These checks catch malformed Compose config and Python syntax errors.
+Run `docker compose config --quiet` after changing `.env` port or project-name
+settings to confirm the clone remains portable.
 
 For MCP changes, also run:
 
@@ -87,9 +94,11 @@ Open:
 Expected behavior:
 
 - The cockpit loads lessons without staying on `Loading lessons...`.
+- Lesson code blocks include working `Copy` buttons.
 - The Splunk tabs show Splunk login pages or active sessions.
 - The `Lab CLI` tab can run `Run full lab validation`.
 - The `Lab CLI` tab can run `Check Learn Splunk MCP status`.
+- The MCP Integration pane lists tools and quick SPL examples.
 
 ## TDD Workflow
 

@@ -44,6 +44,9 @@ This scaffold follows the Splunk documentation for:
    ```
 
 2. Edit `.env` and set `SPLUNK_PASSWORD` to a local lab password that meets Splunk password requirements.
+   You can also change `COMPOSE_PROJECT_NAME` and any `*_PORT` values if you want
+   to run multiple clones or avoid conflicts with services already using the
+   default ports.
 
 3. Start the lab:
 
@@ -59,6 +62,9 @@ This scaffold follows the Splunk documentation for:
    - Indexer/search UI: <http://localhost:8000>
    - Deployment server UI: <http://localhost:18000>
    - Heavy forwarder UI: <http://localhost:28000>
+
+   If you changed `LESSON_WEB_PORT`, use that port instead of `3000`. If you
+   changed any Splunk web ports, use the matching values from `.env`.
 
 6. Log in as `admin` with the password from `.env`.
 
@@ -88,6 +94,12 @@ The cockpit keeps an `Architecture` pane visible on the left that maps this loca
 lab into Splunk-style tiers: search, indexing, collection, and management. Lesson
 modules appear as a row above the lesson content in the middle pane, while the
 right pane hosts Splunk Web and Lab CLI tabs.
+
+The lesson pane borrows selected `splunk-lab` lab-guide patterns: copy buttons on
+command and SPL snippets, callout-style notes, compact reference tables, and
+step-oriented lesson sections. The top bar also shows lightweight service status
+badges so you can quickly see whether Splunk Web and MCP-facing services are
+reachable.
 
 The cockpit embeds Splunk through same-origin path proxies so Splunk login cookies
 work inside the embedded panes:
@@ -120,6 +132,12 @@ Instead, it runs a small allow-list of local lab commands:
 This keeps command execution scoped to the learning workflow while still letting
 you complete CLI-based lesson steps from the browser.
 
+The Lab CLI uses Docker Compose from inside the `lesson-web` container. It needs
+access to your host Docker socket through `DOCKER_SOCKET` in `.env`. The default
+is `/var/run/docker.sock`, which works for most Docker Desktop and Linux
+installations. Override it only if your Docker installation uses a different
+socket path.
+
 ## MCP Integration
 
 The lab includes a local MCP server named `learn-splunk`.
@@ -132,6 +150,10 @@ The lab includes a local MCP server named `learn-splunk`.
 Use this endpoint from Cursor or another MCP client to inspect the running lab
 with tools such as `validate_spl`, `search_oneshot`, `search_export`,
 `get_indexes`, `get_saved_searches`, `run_saved_search`, and `get_config`.
+
+The cockpit includes a curated MCP Tool Explorer in the MCP Integration pane.
+It exposes only browser-safe, allow-listed tools through the lesson web service:
+`validate_spl`, `get_config`, `get_indexes`, and `search_oneshot`.
 
 Example SPL prompts to try through `search_oneshot`:
 
@@ -162,6 +184,8 @@ python3 scripts/check_mcp_status.py
 
 - Do not commit `.env`; it contains your local Splunk admin password.
 - The compose file uses official Splunk container images and keeps image names configurable in `.env`.
+- The compose project defaults to `learn-splunk` and does not set fixed container
+  names, so multiple clones can run side-by-side if you also change host ports.
 - Splunk 10.x requires `SPLUNK_GENERAL_TERMS=--accept-sgt-current-at-splunk-com`.
 - The deployment server distributes apps from `splunk/deployment-apps`.
 - The indexer has a local app under `splunk/indexer/apps/lab_index` to create dedicated data-source indexes and enable receiving on port `9997`.

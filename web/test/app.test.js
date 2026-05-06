@@ -73,12 +73,60 @@ test("browser app replaces Loading lessons with the first lesson", async () => {
   });
 });
 
+test("browser app adds lab-guide copy buttons to lesson code blocks", async () => {
+  const html = await readFile(path.join(publicDir, "index.html"), "utf-8");
+  const dom = new JSDOM(html, {
+    url: "http://localhost:3000/",
+    runScripts: "outside-only",
+  });
+  const copied = [];
+
+  globalThis.document = dom.window.document;
+  globalThis.window = dom.window;
+  globalThis.queueMicrotask = queueMicrotask;
+  Object.defineProperty(globalThis, "navigator", {
+    configurable: true,
+    value: { clipboard: { writeText: async (value) => copied.push(value) } },
+  });
+  globalThis.fetch = async (url) => {
+    if (url === "/api/lessons") {
+      return {
+        ok: true,
+        json: async () => ({
+          lessons: [{ id: "00-topology", title: "topology", file: "00-topology.md" }],
+        }),
+      };
+    }
+    if (url === "/api/lessons/00-topology") {
+      return {
+        ok: true,
+        json: async () => ({ html: '<pre><code class="language-spl">index=lab_file | head 5</code></pre>' }),
+      };
+    }
+    if (url === "/api/commands") {
+      return { ok: true, json: async () => ({ commands: [] }) };
+    }
+    throw new Error(`Unexpected fetch URL: ${url}`);
+  };
+
+  await import(`${pathToFileURL(path.join(publicDir, "app.js")).href}?test=${Date.now()}`);
+
+  await waitFor(() => {
+    assert.ok(dom.window.document.querySelector(".guide-code-block"));
+    assert.equal(dom.window.document.querySelector(".copy-btn").textContent, "Copy");
+  });
+
+  dom.window.document.querySelector(".copy-btn").click();
+  await waitFor(() => assert.deepEqual(copied, ["index=lab_file | head 5"]));
+});
+
 test("browser app embeds Splunk panes on same-origin paths", async () => {
   const html = await readFile(path.join(publicDir, "index.html"), "utf-8");
 
   assert.doesNotMatch(html, /data-view="architecture">Architecture/);
   assert.match(html, /data-view="splunk">Indexer\/Search Head/);
   assert.match(html, /class="credential-pill"/);
+  assert.match(html, /id="lab-status-strip" class="lab-status-strip"/);
   assert.match(html, /Login: <strong>admin<\/strong> \/ <strong>\{\{SPLUNK_PASSWORD\}\}<\/strong>/);
   assert.ok(html.indexOf('class="credential-pill"') < html.indexOf('data-view="splunk"'));
   assert.match(html, /src="\/splunk\/reset"/);
@@ -276,6 +324,74 @@ test("browser app documents the Learn Splunk MCP integration", async () => {
   assert.match(html, /index=buttercup sourcetype=buttercup_sales/);
   assert.match(html, /index=lab_hec sourcetype=lab:hec/);
   assert.match(html, /Do not expose port 8050 beyond localhost/);
+  assert.match(html, /class="mcp-explorer"/);
+  assert.match(html, /Explore MCP Tools/);
+  assert.match(html, /data-mcp-query="index=lab_otel sourcetype=lab:otel \| head 5"/);
+  assert.match(html, /id="mcp-tool-list"/);
+  assert.match(html, /id="mcp-tool-form"/);
+  assert.match(html, /id="mcp-result"/);
+});
+
+test("browser app loads curated MCP tools and runs selected tool", async () => {
+  const html = await readFile(path.join(publicDir, "index.html"), "utf-8");
+  const dom = new JSDOM(html, {
+    url: "http://localhost:3000/",
+    runScripts: "outside-only",
+  });
+  const calls = [];
+
+  globalThis.document = dom.window.document;
+  globalThis.window = dom.window;
+  globalThis.queueMicrotask = queueMicrotask;
+  globalThis.fetch = async (url, options = {}) => {
+    calls.push({ url, options });
+    if (url === "/api/lessons") {
+      return { ok: true, json: async () => ({ lessons: [] }) };
+    }
+    if (url === "/api/commands") {
+      return { ok: true, json: async () => ({ commands: [] }) };
+    }
+    if (url === "/api/lab/status") {
+      return { ok: true, json: async () => ({ services: [{ name: "splunk-mcp", status: "ok" }] }) };
+    }
+    if (url === "/api/mcp/tools") {
+      return {
+        ok: true,
+        json: async () => ({
+          tools: [
+            {
+              name: "validate_spl",
+              description: "Validate SPL",
+              inputSchema: {
+                properties: {
+                  query: { type: "string", description: "SPL query" },
+                },
+              },
+            },
+          ],
+        }),
+      };
+    }
+    if (url === "/api/mcp/tools/call") {
+      return { ok: true, json: async () => ({ tool: "validate_spl", result: { content: [] } }) };
+    }
+    throw new Error(`Unexpected fetch URL: ${url}`);
+  };
+
+  await import(`${pathToFileURL(path.join(publicDir, "app.js")).href}?test=${Date.now()}`);
+
+  await waitFor(() => {
+    assert.match(dom.window.document.querySelector("#mcp-tool-list").textContent, /validate_spl/);
+    assert.ok(dom.window.document.querySelector('[name="query"]'));
+  });
+
+  dom.window.document.querySelector('[name="query"]').value = "index=lab_file | head 1";
+  dom.window.document.querySelector("#mcp-run-tool").click();
+
+  await waitFor(() => {
+    assert.match(dom.window.document.querySelector("#mcp-result").textContent, /validate_spl/);
+  });
+  assert.ok(calls.some((call) => call.url === "/api/mcp/tools/call" && call.options.method === "POST"));
 });
 
 test("browser app opens data source cards in the Lab CLI pane", async () => {

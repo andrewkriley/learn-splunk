@@ -8,11 +8,11 @@
     "test": "NODE_ENV=test node --test"
   },
   "dependencies": {
-    "express": "latest",
-    "http-proxy-middleware": "latest",
-    "markdown-it": "latest"
+    "express": "5.2.1",
+    "http-proxy-middleware": "3.0.5",
+    "markdown-it": "14.1.1"
   },
   "devDependencies": {
-    "jsdom": "latest"
+    "jsdom": "29.1.1"
   }
 }

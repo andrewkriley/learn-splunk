@@ -27,6 +27,8 @@ Lab URLs:
 
 ## Mental Model
 
+> Tip: use the **Show deployment apps and server classes** Lab CLI command before editing files. It prints the deployed apps and the `serverclass.conf` relationship in one place.
+
 A deployment app is a directory under:
 
 ```text
@@ -58,17 +60,27 @@ That sends `TA_common_outputs` to both the universal forwarder and heavy forward
 
 ## Exercise
 
+### Step 1: List server classes
+
 List server classes on the deployment server:
 
 ```sh
 docker compose exec deployment-server /opt/splunk/bin/splunk btool serverclass list --debug
 ```
 
+### Step 2: Check deployed apps on the client
+
 Check which apps landed on the universal forwarder:
 
 ```sh
 docker compose exec universal-forwarder ls /opt/splunkforwarder/etc/apps
 ```
+
+| Deployment concept | Lab example |
+|---|---|
+| Server class | `all_forwarders`, `direct_universal_forwarders`, `via_heavy_universal_forwarders` |
+| Deployment app | `TA_common_outputs`, `TA_linux_file_inputs`, `TA_outputs_to_heavy` |
+| Client match | forwarder hostnames matched by `whitelist.*` |
 
 ## What To Learn
 

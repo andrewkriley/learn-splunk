@@ -39,6 +39,13 @@ function requestWithHost(port, host) {
   });
 }
 
+function mcpResponse(payload, sessionId = "test-session") {
+  return new Response(`event: message\ndata: ${JSON.stringify(payload)}\n\n`, {
+    status: 200,
+    headers: { "mcp-session-id": sessionId },
+  });
+}
+
 test("lesson API lists markdown lessons and renders lesson HTML", async (t) => {
   const root = await mkdtemp(path.join(tmpdir(), "splunk-lessons-"));
   const lessonsDir = path.join(root, "lessons");
@@ -216,6 +223,107 @@ test("restart universal forwarder command restarts both UF paths", async () => {
     serverSource,
     /args:\s*\["compose",\s*"restart",\s*"universal-forwarder",\s*"universal-forwarder-via-heavy"\]/,
   );
+});
+
+test("MCP explorer API exposes only curated tools and calls allow-listed tools", async (t) => {
+  const root = await mkdtemp(path.join(tmpdir(), "splunk-mcp-api-"));
+  const lessonsDir = path.join(root, "lessons");
+  const publicDir = path.join(root, "public");
+  await mkdir(lessonsDir);
+  await mkdir(publicDir);
+  await writeFile(path.join(publicDir, "index.html"), "<p>lesson app</p>");
+  const calls = [];
+  const fakeFetch = async (_url, options = {}) => {
+    const payload = JSON.parse(options.body || "{}");
+    calls.push(payload.method);
+    if (payload.method === "initialize") {
+      return mcpResponse({ jsonrpc: "2.0", id: payload.id, result: { serverInfo: { name: "Learn Splunk MCP" } } });
+    }
+    if (payload.method === "tools/list") {
+      return mcpResponse({
+        jsonrpc: "2.0",
+        id: payload.id,
+        result: {
+          tools: [
+            { name: "validate_spl", description: "Validate SPL", inputSchema: { properties: {} } },
+            { name: "search_oneshot", description: "Search", inputSchema: { properties: {} } },
+            { name: "delete_everything", description: "Unsafe", inputSchema: { properties: {} } },
+          ],
+        },
+      });
+    }
+    if (payload.method === "tools/call") {
+      return mcpResponse({
+        jsonrpc: "2.0",
+        id: payload.id,
+        result: { content: [{ type: "text", text: '{"risk_score":0}' }] },
+      });
+    }
+    throw new Error(`Unexpected MCP method ${payload.method}`);
+  };
+
+  const server = http.createServer(createApp({ labRoot: root, lessonsDir, publicDir, fetch: fakeFetch }));
+  t.after(() => server.close());
+  const port = await listen(server);
+
+  const tools = await fetchJson(`http://127.0.0.1:${port}/api/mcp/tools`);
+  assert.equal(tools.response.status, 200);
+  assert.deepEqual(
+    tools.body.tools.map((tool) => tool.name),
+    ["validate_spl", "search_oneshot"],
+  );
+
+  const call = await fetchJson(`http://127.0.0.1:${port}/api/mcp/tools/call`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ name: "validate_spl", arguments: { query: "index=lab_file | head 1" } }),
+  });
+  assert.equal(call.response.status, 200);
+  assert.equal(call.body.tool, "validate_spl");
+  assert.ok(calls.includes("tools/call"));
+
+  const blocked = await fetchJson(`http://127.0.0.1:${port}/api/mcp/tools/call`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ name: "delete_everything", arguments: {} }),
+  });
+  assert.equal(blocked.response.status, 404);
+});
+
+test("lab status API reports service reachability without Docker socket access", async (t) => {
+  const root = await mkdtemp(path.join(tmpdir(), "splunk-status-api-"));
+  const lessonsDir = path.join(root, "lessons");
+  const publicDir = path.join(root, "public");
+  await mkdir(lessonsDir);
+  await mkdir(publicDir);
+  await writeFile(path.join(publicDir, "index.html"), "<p>lesson app</p>");
+  const fakeFetch = async (url) => {
+    if (String(url).includes("down-service")) {
+      throw new Error("unreachable");
+    }
+    return new Response("ok", { status: 200 });
+  };
+
+  const server = http.createServer(
+    createApp({
+      labRoot: root,
+      lessonsDir,
+      publicDir,
+      fetch: fakeFetch,
+      mcpHealthUrl: "http://splunk-mcp:8050/healthz",
+      splunkTarget: "http://splunk-indexer:8000/en-US/account/login",
+      deploymentTarget: "http://down-service:8000/en-US/account/login",
+      heavyTarget: "http://heavy-forwarder:8000/en-US/account/login",
+    }),
+  );
+  t.after(() => server.close());
+  const port = await listen(server);
+
+  const { response, body } = await fetchJson(`http://127.0.0.1:${port}/api/lab/status`);
+  assert.equal(response.status, 200);
+  assert.ok(body.services.some((service) => service.name === "lesson-web" && service.status === "ok"));
+  assert.ok(body.services.some((service) => service.name === "splunk-mcp" && service.status === "ok"));
+  assert.ok(body.services.some((service) => service.name === "deployment" && service.status === "down"));
 });
 
 test("host-based Splunk proxy runs before lesson static assets", async (t) => {
