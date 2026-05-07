@@ -1,17 +1,17 @@
 # Learn Splunk
 
-A local, practical Splunk learning lab for getting data in.
+A local, practical Splunk learning lab for Splunk fundamentals: logging in, exploring a forwarding topology, searching sample data, building dashboards, and using MCP-backed tools.
 
-This project walks through a full forwarding topology:
+This project stands up a full local lab topology:
 
-- Splunk Enterprise receiver/indexer
+- Splunk Enterprise indexer/search head
 - Splunk Enterprise deployment server, now called agent management in Splunk 10.x docs
 - Splunk Enterprise heavy forwarder
 - Splunk Universal Forwarders for both `UF -> Indexer` and `UF -> Heavy Forwarder -> Indexer`
 - File, TCP, UDP, JSON, XML, OpenTelemetry-style JSON, HEC, scripted, masked PII, and Buttercup Games app data source examples
 - Deployment apps, server classes, and the core `inputs.conf`, `outputs.conf`, `props.conf`, and `serverclass.conf` files
 - Small file and network event generators so searches return real events
-- A local Splunk MCP server for AI-assisted SPL validation, index inspection, and safe search examples
+- A local Learn Splunk MCP server for AI-assisted SPL validation, index inspection, config lookup, and safe search examples
 
 The lab is for learning only. It is not a production Splunk architecture.
 
@@ -35,7 +35,23 @@ This scaffold follows the Splunk documentation for:
 - A Splunk-compatible admin password
 - Acceptance of the Splunk license and Splunk General Terms before running the containers
 
-## Quick Start
+## Stand Up The Environment
+
+From a fresh clone:
+
+```sh
+git clone git@github.com:andrewkriley/learn-splunk.git
+cd learn-splunk
+```
+
+If you prefer HTTPS:
+
+```sh
+git clone https://github.com/andrewkriley/learn-splunk.git
+cd learn-splunk
+```
+
+Then configure and start the lab:
 
 1. Create your local environment file:
 
@@ -43,10 +59,14 @@ This scaffold follows the Splunk documentation for:
    cp .env.example .env
    ```
 
-2. Edit `.env` and set `SPLUNK_PASSWORD` to a local lab password that meets Splunk password requirements.
-   You can also change `COMPOSE_PROJECT_NAME` and any `*_PORT` values if you want
-   to run multiple clones or avoid conflicts with services already using the
-   default ports.
+2. Edit `.env`:
+
+   - Set `SPLUNK_PASSWORD` to a local lab password that meets Splunk password requirements.
+   - Review `SPLUNK_GENERAL_TERMS=--accept-sgt-current-at-splunk-com` after reading the Splunk General Terms.
+   - Keep `COMPOSE_PROJECT_NAME=learn-splunk` unless you want to run multiple clones.
+   - Change any `*_PORT` values if the defaults are already in use.
+   - Keep `MCP_BIND_HOST=127.0.0.1` so the local MCP endpoint is not exposed beyond your machine.
+   - Keep `DOCKER_SOCKET=/var/run/docker.sock` unless your Docker installation uses a different socket path.
 
 3. Start the lab:
 
@@ -55,10 +75,15 @@ This scaffold follows the Splunk documentation for:
    ```
 
 4. Wait for Splunk to finish first-time provisioning. This can take several minutes.
+   You can watch container state with:
 
-5. Open Splunk Web:
+   ```sh
+   docker compose ps
+   ```
 
-   - Guided lesson cockpit: <http://learn.localtest.me:3000>
+5. Open the Learn Splunk cockpit:
+
+   - Learn Splunk cockpit: <http://learn.localtest.me:3000>
    - Indexer/search UI: <http://localhost:8000>
    - Deployment server UI: <http://localhost:18000>
    - Heavy forwarder UI: <http://localhost:28000>
@@ -66,12 +91,26 @@ This scaffold follows the Splunk documentation for:
    If you changed `LESSON_WEB_PORT`, use that port instead of `3000`. If you
    changed any Splunk web ports, use the matching values from `.env`.
 
-6. Log in as `admin` with the password from `.env`.
+   `learn.localtest.me` resolves to your local machine and is used so the cockpit can embed Splunk panes through same-origin paths.
 
-7. Run the validation script:
+6. Log in as `admin` with the password from `.env`. The cockpit header also shows the login details for quick reference.
+
+7. Run validation after the containers are up:
 
    ```sh
    python3 scripts/validate_lab.py
+   ```
+
+8. Stop the lab when finished:
+
+   ```sh
+   docker compose down
+   ```
+
+   To remove lab volumes and start from a clean Splunk provisioning state, run:
+
+   ```sh
+   docker compose down -v
    ```
 
 ## First Search
@@ -84,22 +123,29 @@ index=lab_file sourcetype=lab:app
 
 If you do not see events immediately, wait a minute and run the validation script again.
 
-## Learning Path
+## Learning Journey
 
-The easiest way to use the lab is through the guided lesson cockpit at
+The easiest way to use the lab is through the Learn Splunk cockpit at
 <http://learn.localtest.me:3000>. It shows lesson instructions, Splunk Web, and a small
 allow-listed lab CLI in one browser window.
 
-The cockpit keeps an `Architecture` pane visible on the left that maps this local
-lab into Splunk-style tiers: search, indexing, collection, and management. Lesson
-modules appear as a row above the lesson content in the middle pane, while the
-right pane hosts Splunk Web and Lab CLI tabs.
+The current cockpit journey is:
 
-The lesson pane borrows selected `splunk-lab` lab-guide patterns: copy buttons on
-command and SPL snippets, callout-style notes, compact reference tables, and
-step-oriented lesson sections. The top bar also shows lightweight service status
-badges so you can quickly see whether Splunk Web and MCP-facing services are
-reachable.
+1. **Start Here**: log in to the Indexer/Search Head pane as `admin`.
+2. **Lab Topology**: inspect the Splunk roles, forwarding paths, and data sources. Clicking topology cards opens the matching config in Lab CLI.
+3. **Explore Data**: search dedicated indexes, sources, and sourcetypes for the file, network, HEC, OpenTelemetry, scripted, masked, and Buttercup examples.
+4. **Create Dashboards**: turn searches into tables, charts, and dashboard panels.
+5. **Use Tools (MCP)**: use browser-safe MCP tools for SPL validation, index inspection, config lookup, and safe searches.
+
+The left rail contains the learning journey and lab tools. The middle pane shows
+the selected learning section. The persistent right pane hosts the Indexer/Search
+Head, Deployment Server, Heavy Forwarder, and Lab CLI tabs. On first load, Start
+Here opens the Indexer/Search Head pane; selecting Lab Topology switches the
+right pane to Lab CLI.
+
+The top header stays quiet when all containers are healthy and shows a single
+generic warning if any container needs attention. The full Status page lists all
+Docker Compose containers, including forwarders and sample data generators.
 
 The cockpit embeds Splunk through same-origin path proxies so Splunk login cookies
 work inside the embedded panes:
@@ -128,6 +174,7 @@ Instead, it runs a small allow-list of local lab commands:
 - restart the universal forwarder
 - list deployment clients
 - inspect selected `btool` outputs, inputs, and `props.conf` stanzas
+- inspect clicked topology functions and data source configuration files
 
 This keeps command execution scoped to the learning workflow while still letting
 you complete CLI-based lesson steps from the browser.
@@ -151,7 +198,7 @@ Use this endpoint from Cursor or another MCP client to inspect the running lab
 with tools such as `validate_spl`, `search_oneshot`, `search_export`,
 `get_indexes`, `get_saved_searches`, `run_saved_search`, and `get_config`.
 
-The cockpit includes a curated MCP Tool Explorer in the MCP Integration pane.
+The cockpit includes a curated MCP Tool Explorer in the `Use Tools (MCP)` pane.
 It exposes only browser-safe, allow-listed tools through the lesson web service:
 `validate_spl`, `get_config`, `get_indexes`, and `search_oneshot`.
 
@@ -173,9 +220,9 @@ See `TEST_PLAN.md` for the full test strategy.
 Quick checks:
 
 ```sh
-cd web && npm test
-cd .. && docker compose config --quiet
-python3 -m py_compile scripts/generate_logs.py scripts/validate_lab.py
+npm --prefix web test
+docker compose config --quiet
+python3 -m py_compile scripts/*.py
 python3 scripts/validate_lab.py
 python3 scripts/check_mcp_status.py
 ```
