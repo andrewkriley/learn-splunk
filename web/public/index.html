@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="en">
+<html lang="en" data-theme="system">
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
@@ -12,37 +12,67 @@
         <strong>Learn Splunk</strong>
         <span class="muted">local lab cockpit</span>
       </div>
-      <div id="lab-status-strip" class="lab-status-strip" aria-label="Lab service status">
-        <span class="status-badge checking">Checking services...</span>
-      </div>
+      <div id="lab-status-strip" class="lab-status-strip" aria-label="Lab service status"></div>
       <nav>
         <span class="credential-pill">Login: <strong>admin</strong> / <strong>{{SPLUNK_PASSWORD}}</strong></span>
-        <button class="tab" data-view="splunk">Indexer/Search Head</button>
+        <label class="theme-picker">
+          <span>Theme</span>
+          <select id="theme-mode" aria-label="Theme mode">
+            <option value="system">System</option>
+            <option value="dark">Dark</option>
+            <option value="light">Light</option>
+          </select>
+        </label>
+        <button class="tab active" data-view="splunk">Indexer/Search Head</button>
         <button class="tab" data-view="deployment">Deployment Server</button>
         <button class="tab" data-view="heavy">Heavy Forwarder</button>
-        <button class="tab active" data-view="terminal">Lab CLI</button>
+        <button class="tab" data-view="terminal">Lab CLI</button>
       </nav>
     </header>
 
     <main class="layout">
-      <aside class="architecture-pane">
+      <aside class="guide-nav" aria-label="Learning journey navigation">
+        <p class="sidebar-label">Learning Journey</p>
+        <button class="guide-nav-item active" data-section="start-here"><span class="step-num">1</span><span>Log Into Splunk</span></button>
+        <button class="guide-nav-item" data-section="lab-topology"><span class="step-num">2</span><span>Lab Topology</span></button>
+        <button class="guide-nav-item" data-section="data-sources"><span class="step-num">3</span><span>Explore Data</span></button>
+        <button class="guide-nav-item" data-section="forwarding-paths"><span class="step-num">4</span><span>Create Dashboards</span></button>
+        <button class="guide-nav-item" data-section="mcp-ask"><span class="step-num">5</span><span>Use Tools (MCP)</span></button>
+        <hr class="sidebar-hr" />
+        <p class="sidebar-label">Lab Tools</p>
+        <button class="guide-nav-item" data-section="status"><span class="tool-icon">S</span><span>Status</span></button>
+        <button class="guide-nav-item" data-section="deployment-server"><span class="tool-icon">L</span><span>Lesson Modules</span></button>
+        <button class="guide-nav-item" data-section="parsing-masking"><span class="tool-icon">P</span><span>Parsing And Masking</span></button>
+        <button class="guide-nav-item" data-section="docs-skills"><span class="tool-icon">D</span><span>Docs And Skills</span></button>
+        <hr class="sidebar-hr" />
+        <p class="sidebar-label">Coming Soon</p>
+        <div class="guide-nav-item locked"><span class="tool-icon">Q</span><span>Quizzes</span><span class="soon-badge">Soon</span></div>
+        <div class="guide-nav-item locked"><span class="tool-icon">C</span><span>Progress Checks</span><span class="soon-badge">Soon</span></div>
+      </aside>
+
+      <section class="overview-panel guide-section active" id="section-start-here" data-section="start-here" aria-label="Start Here">
+        <div class="section-hero">
+          <p class="eyebrow">Start Here</p>
+          <h1>Your Learn Splunk Journey</h1>
+          <p>Use the right-hand Splunk pane and Lab CLI to move from first login through topology, data exploration, dashboards, and MCP-assisted tools.</p>
+        </div>
+        <div class="journey-steps">
+          <article class="journey-card"><span>Step 1</span><strong>Log Into Splunk</strong><p>Use the Indexer/Search Head pane on the right with the header credentials to sign in as <code>admin</code>.</p></article>
+          <article class="journey-card"><span>Step 2</span><strong>Explore The Lab Topology</strong><p>Open the topology map to see Splunk roles, collection paths, and every data source feeding the lab.</p></article>
+          <article class="journey-card"><span>Step 3</span><strong>Explore Data</strong><p>Search dedicated indexes, sources, and sourcetypes from the sample file, network, HEC, OpenTelemetry, scripted, masked, and Buttercup inputs.</p></article>
+          <article class="journey-card"><span>Step 4</span><strong>Create Dashboards</strong><p>Turn searches into tables, charts, and dashboard panels that explain what the lab data is doing.</p></article>
+          <article class="journey-card"><span>Step 5</span><strong>Use Tools (MCP)</strong><p>Use the Lab CLI and browser-safe MCP tools to inspect configuration, validate SPL, and run guided searches.</p></article>
+        </div>
+        <div class="guide-pager" aria-label="Guide section navigation">
+          <button type="button" data-guide-prev disabled>Previous</button>
+          <span id="guide-progress">Step 1 of 9</span>
+          <button type="button" data-guide-next>Next</button>
+        </div>
+      </section>
+
+      <aside class="architecture-pane guide-section" id="section-lab-topology" data-section="lab-topology">
         <div class="architecture-page">
           <section class="architecture-map">
-            <div class="architecture-hero">
-              <p class="eyebrow">Splunk Platform Architecture</p>
-              <h2>Forwarding Lab Topology</h2>
-              <p>
-                This lab maps data sources, forwarding paths, parsing, management, indexing,
-                and searching to local Docker services.
-              </p>
-            </div>
-
-            <section class="cockpit-wrapper">
-              <span class="node-role">Lab Wrapper</span>
-              <strong>Lesson Cockpit</strong>
-              <small>wraps guided lessons, Splunk panes, Lab CLI, and the topology map</small>
-            </section>
-
             <div class="architecture-diagram" aria-label="Learn Splunk lab architecture">
               <aside class="management-column">
                 <h3>Management</h3>
@@ -65,7 +95,7 @@
                     <section class="nested-tier splunk-enterprise-tier">
                       <h4>Splunk Enterprise</h4>
                       <div class="tier-body function-pair">
-                        <div class="node search-head">
+                        <div class="node search-head topology-command-card" data-command="topologySearchHead" role="button" tabindex="0">
                           <span class="node-role">Search Function</span>
                           <strong>Search Head</strong>
                           <small>queries dedicated source indexes</small>
@@ -74,7 +104,7 @@
                             <li>web.conf for embedded lab access</li>
                           </ul>
                         </div>
-                        <div class="node indexer">
+                        <div class="node indexer topology-command-card" data-command="topologyIndexer" role="button" tabindex="0">
                           <span class="node-role">Index Function</span>
                           <strong>Indexer</strong>
                           <small>receives on 9997 and stores events</small>
@@ -88,7 +118,7 @@
                     </section>
                     <section class="nested-tier splunk-cloud-tier">
                       <h4>Splunk Cloud Tier</h4>
-                      <div class="node cloud-destination">
+                      <div class="node cloud-destination topology-command-card" data-command="topologySplunkCloud" role="button" tabindex="0">
                         <span class="node-role">Optional Cloud Destination</span>
                         <strong>Splunk Cloud</strong>
                         <small>HF can route selected inputs to Splunk Cloud using cloud-provided forwarding outputs</small>
@@ -108,7 +138,7 @@
                   <div class="tier-body collection-flow">
                     <div class="path-card direct-path">
                       <div class="path-arrow">UF forwards upstream</div>
-                      <div class="node uf">
+                      <div class="node uf topology-command-card" data-command="topologyUfDirect" role="button" tabindex="0">
                         <span class="node-role">Universal Forwarder Direct Path</span>
                         <strong>universal-forwarder</strong>
                         <small>collects file/TCP/UDP inputs and forwards upstream</small>
@@ -120,7 +150,7 @@
                       </div>
                     </div>
                     <div class="path-card heavy-path">
-                      <div class="node hf">
+                      <div class="node hf topology-command-card" data-command="topologyHeavyForwarder" role="button" tabindex="0">
                         <span class="node-role">Heavy Forwarder / Parsing</span>
                         <strong>heavy-forwarder</strong>
                         <small>props.conf parsing can happen here; outputs.conf can route data to Enterprise, Cloud, or both</small>
@@ -131,7 +161,7 @@
                         </ul>
                       </div>
                       <div class="path-arrow">UF forwards to HF</div>
-                      <div class="node uf">
+                      <div class="node uf topology-command-card" data-command="topologyUfViaHeavy" role="button" tabindex="0">
                         <span class="node-role">Universal Forwarder Via HF Path</span>
                         <strong>universal-forwarder-via-heavy</strong>
                         <small>collects file/TCP/UDP inputs and forwards to HF</small>
@@ -249,8 +279,18 @@
         </div>
       </aside>
 
-      <section class="workspace">
-        <div class="workspace-frame" id="view-splunk">
+      <section class="data-source-panel guide-section" id="section-data-sources" data-section="data-sources" aria-label="Explore data">
+        <p class="eyebrow">Explore Data</p>
+        <h3>Search The Lab's Indexes, Sources, And Sourcetypes</h3>
+        <div class="docs-grid">
+          <article><strong>Source Metadata</strong><p>Each source maps to a dedicated index, source, sourcetype, and configuration path.</p></article>
+          <article><strong>Search Practice</strong><p>Use the Indexer/Search Head pane to run SPL against <code>lab_file</code>, <code>lab_json</code>, <code>lab_hec</code>, <code>lab_otel</code>, and <code>buttercup</code>.</p></article>
+          <article><strong>Config Context</strong><p>Use the Lab Topology cards to load the relevant inputs, outputs, props, transforms, and runtime <code>btool</code> output in Lab CLI.</p></article>
+        </div>
+      </section>
+
+      <section class="workspace" aria-label="Lab workspace">
+        <div class="workspace-frame active" id="view-splunk">
           <iframe src="/splunk/reset" title="Splunk indexer"></iframe>
         </div>
         <div class="workspace-frame" id="view-deployment">
@@ -259,7 +299,7 @@
         <div class="workspace-frame" id="view-heavy">
           <iframe src="/heavy/reset" title="Splunk heavy forwarder"></iframe>
         </div>
-        <div class="workspace-frame terminal active" id="view-terminal">
+        <div class="workspace-frame terminal" id="view-terminal">
           <div class="command-panel">
             <pre id="command-output">Pick a command to run.</pre>
             <h2>Lab CLI</h2>
@@ -272,57 +312,90 @@
         </div>
       </section>
 
-      <section class="tips-panel" aria-label="Splunk configuration tips">
-        <p class="eyebrow">Tips</p>
-        <h3>Key Configuration Files</h3>
+      <section class="tips-panel guide-section" id="section-forwarding-paths" data-section="forwarding-paths" aria-label="Create dashboards">
+        <p class="eyebrow">Create Dashboards</p>
+        <h3>Turn Lab Searches Into Visual Panels</h3>
         <div class="tip-list">
           <article class="tip-card">
-            <strong>inputs.conf</strong>
-            <p>Defines what Splunk reads or listens to.</p>
+            <strong>Find A Question</strong>
+            <p>Start with a question the lab data can answer.</p>
             <small>
-              Applied on UFs for file, TCP, and UDP inputs; on the indexer and HF for
-              Splunk-to-Splunk receiving ports.
+              Try counts by sourcetype, HEC event volume over time, Buttercup revenue by vendor,
+              or masked PII validation.
             </small>
           </article>
           <article class="tip-card">
-            <strong>outputs.conf</strong>
-            <p>Defines where a forwarder sends events next.</p>
+            <strong>Shape The SPL</strong>
+            <p>Use transforming commands to make chart-ready results.</p>
             <small>
-              Applied on the direct UF to send to the indexer, on the via-HF UF to send to
-              the heavy forwarder, and on the HF to send parsed data to Splunk Enterprise or
-              Splunk Cloud target groups.
+              Examples: <code>timechart count by sourcetype</code>,
+              <code>stats count by index</code>, or <code>stats sum(revenue) by vendor</code>.
             </small>
           </article>
           <article class="tip-card">
-            <strong>Splunk Cloud forwarding</strong>
-            <p>A single HF can route different inputs to different outputs.</p>
+            <strong>Choose A Visualization</strong>
+            <p>Match the visualization to the question.</p>
             <small>
-              Separate HFs are optional, but often used when Cloud traffic needs separate
-              certificates, network paths, scaling, change control, or failure isolation.
+              Use single values for health, tables for metadata, line charts for time, and bar
+              charts for ranked categories.
             </small>
           </article>
           <article class="tip-card">
-            <strong>props.conf</strong>
-            <p>Defines event parsing behavior such as timestamps, line breaking, and sourcetype handling.</p>
+            <strong>Save A Panel</strong>
+            <p>Use Splunk's Save As workflow to create a dashboard panel.</p>
             <small>
-              Applied where parsing occurs: on the indexer for direct UF data, and on the
-              heavy forwarder before it forwards parsed events.
+              Save useful searches from the Indexer/Search Head pane, then return to the cockpit
+              to continue the guided path.
             </small>
           </article>
           <article class="tip-card">
-            <strong>transforms.conf</strong>
-            <p>Defines regex-based event rewrites, including masking sensitive values.</p>
+            <strong>Explain The Data</strong>
+            <p>Add context so dashboards teach the ingestion path.</p>
             <small>
-              In this lab, the HF applies transforms to `lab:masked` before forwarding to the
-              indexer, so stored events contain masked email and card values.
+              Name panels after the data source, index, sourcetype, or forwarding route they
+              demonstrate.
             </small>
           </article>
         </div>
       </section>
 
-      <section class="mcp-panel" aria-label="MCP integration">
-        <p class="eyebrow">MCP Integration</p>
-        <h3>Connect AI Tools To The Lab</h3>
+      <section class="status-panel guide-section" id="section-status" data-section="status" aria-label="Lab status">
+        <p class="eyebrow">Status</p>
+        <h3>Live Lab Diagnostics</h3>
+        <div class="status-summary">
+          <strong id="status-summary-text">Checking services...</strong>
+          <span id="status-last-updated">Waiting for first update.</span>
+        </div>
+        <div id="status-detail-list" class="status-detail-list">
+          <article class="status-detail-card checking"><strong>Services</strong><p>Collecting service diagnostics...</p></article>
+        </div>
+      </section>
+
+      <section class="mcp-panel guide-section" id="section-mcp-ask" data-section="mcp-ask" aria-label="MCP and Ask Splunk integration">
+        <p class="eyebrow">MCP And Ask Splunk</p>
+        <h3>Ask Splunk With Safe Local Tools</h3>
+        <div class="ask-splunk-intro">
+          <article>
+            <strong>What can I ask?</strong>
+            <p>Start with tool-backed questions such as available indexes, sample events, SPL validation, and Buttercup revenue summaries.</p>
+          </article>
+          <article>
+            <strong>Chat placeholder</strong>
+            <p>Full LLM chat is intentionally deferred. This section introduces the workflow using the existing browser-safe MCP tools first.</p>
+          </article>
+        </div>
+        <div class="setup-tabs" aria-label="MCP setup tabs">
+          <div class="setup-tab-list">
+            <button type="button" class="setup-tab active" data-setup-tab="cursor">Cursor</button>
+            <button type="button" class="setup-tab" data-setup-tab="desktop">Claude Desktop</button>
+          </div>
+          <div class="setup-panel active" data-setup-panel="cursor">
+            <p>Cursor can discover this repo's MCP config from <code>.mcp.json</code>. Start the lab, then connect to <code>http://localhost:8050/mcp</code>.</p>
+          </div>
+          <div class="setup-panel" data-setup-panel="desktop">
+            <p>Claude Desktop can use the same Streamable HTTP endpoint. Add a server named <code>learn-splunk</code> pointing at <code>http://localhost:8050/mcp</code>.</p>
+          </div>
+        </div>
         <div class="mcp-card-list">
           <article class="mcp-card">
             <strong>Local Endpoint</strong>
@@ -382,7 +455,17 @@
         </div>
       </section>
 
-      <section class="instructions">
+      <section class="docs-panel guide-section" id="section-docs-skills" data-section="docs-skills" aria-label="Documentation and skills">
+        <p class="eyebrow">Docs And Skills</p>
+        <h3>Reference Guide</h3>
+        <div class="docs-grid">
+          <article><strong>Common Commands</strong><p><code>docker compose up -d</code>, <code>docker compose ps</code>, and the Lab CLI validation command are the core operating loop.</p></article>
+          <article><strong>Environment</strong><p>Use <code>.env</code> for Splunk images, local password, Compose project name, Docker socket, MCP port, and host port overrides.</p></article>
+          <article><strong>Skills</strong><p>Use the lesson modules for guided practice, the topology for mental models, Lab CLI for config inspection, and MCP tools for SPL exploration.</p></article>
+        </div>
+      </section>
+
+      <section class="instructions guide-section" id="section-deployment-server" data-section="deployment-server">
         <header class="lesson-heading">
           <div>
             <p class="eyebrow">Guided Lessons</p>
@@ -392,6 +475,16 @@
         </header>
         <div id="lesson-content" class="markdown">
           <p>Loading lessons...</p>
+        </div>
+      </section>
+
+      <section class="parsing-panel guide-section" id="section-parsing-masking" data-section="parsing-masking" aria-label="Parsing and masking">
+        <p class="eyebrow">Parsing And Masking</p>
+        <h3>Where Data Is Interpreted And Protected</h3>
+        <div class="docs-grid">
+          <article><strong>Indexer Parsing</strong><p>Direct UF data is parsed at the indexer using source and sourcetype-specific <code>props.conf</code>.</p></article>
+          <article><strong>Heavy Forwarder Parsing</strong><p>The HF can apply <code>props.conf</code> and <code>transforms.conf</code> before forwarding events onward.</p></article>
+          <article><strong>Masking</strong><p>The masked PII path applies regex transforms before data is stored, so email and card values are protected at rest.</p></article>
         </div>
       </section>
     </main>

@@ -7,8 +7,28 @@ const mcpToolList = document.querySelector("#mcp-tool-list");
 const mcpToolForm = document.querySelector("#mcp-tool-form");
 const mcpResult = document.querySelector("#mcp-result");
 const mcpRunButton = document.querySelector("#mcp-run-tool");
+const themeMode = document.querySelector("#theme-mode");
+const statusSummaryText = document.querySelector("#status-summary-text");
+const statusLastUpdated = document.querySelector("#status-last-updated");
+const statusDetailList = document.querySelector("#status-detail-list");
+const guideProgress = document.querySelector("#guide-progress");
 
 let activeMcpTool = null;
+const guideSections = [
+  "start-here",
+  "lab-topology",
+  "data-sources",
+  "forwarding-paths",
+  "mcp-ask",
+  "deployment-server",
+  "parsing-masking",
+  "status",
+  "docs-skills",
+];
+const guideWorkspaceDefaults = new Map([
+  ["start-here", "splunk"],
+  ["lab-topology", "terminal"],
+]);
 
 async function requestJson(url, options) {
   const response = await fetch(url, options);
@@ -17,6 +37,73 @@ async function requestJson(url, options) {
     throw new Error(body.error || `Request failed with ${response.status}`);
   }
   return body;
+}
+
+function applyTheme(mode) {
+  const selected = mode || "system";
+  document.documentElement.dataset.theme = selected;
+  if (themeMode) {
+    themeMode.value = selected;
+  }
+}
+
+function initializeTheme() {
+  const storage = window.localStorage;
+  const stored = storage.getItem("learn-splunk-theme") || "system";
+  applyTheme(stored);
+  themeMode?.addEventListener("change", () => {
+    storage.setItem("learn-splunk-theme", themeMode.value);
+    applyTheme(themeMode.value);
+  });
+}
+
+function activateGuideSection(sectionId) {
+  const index = guideSections.indexOf(sectionId);
+  if (index === -1) {
+    return;
+  }
+
+  document.querySelectorAll(".guide-nav-item[data-section]").forEach((item) => {
+    item.classList.toggle("active", item.dataset.section === sectionId);
+  });
+  document.querySelectorAll(".guide-section").forEach((section) => {
+    section.classList.toggle("active", section.dataset.section === sectionId);
+  });
+  const workspaceView = guideWorkspaceDefaults.get(sectionId);
+  if (workspaceView) {
+    activateView(workspaceView);
+  }
+  if (guideProgress) {
+    guideProgress.textContent = `Step ${index + 1} of ${guideSections.length}`;
+  }
+  document.querySelectorAll("[data-guide-prev]").forEach((button) => {
+    button.disabled = index === 0;
+  });
+  document.querySelectorAll("[data-guide-next]").forEach((button) => {
+    button.disabled = index === guideSections.length - 1;
+  });
+
+}
+
+function initializeGuideNavigation() {
+  document.querySelectorAll(".guide-nav-item[data-section]:not(.locked)").forEach((item) => {
+    item.addEventListener("click", () => activateGuideSection(item.dataset.section));
+  });
+  document.querySelectorAll("[data-guide-prev]").forEach((button) => {
+    button.addEventListener("click", () => {
+      const active = document.querySelector(".guide-nav-item.active[data-section]")?.dataset.section || guideSections[0];
+      const index = Math.max(0, guideSections.indexOf(active) - 1);
+      activateGuideSection(guideSections[index]);
+    });
+  });
+  document.querySelectorAll("[data-guide-next]").forEach((button) => {
+    button.addEventListener("click", () => {
+      const active = document.querySelector(".guide-nav-item.active[data-section]")?.dataset.section || guideSections[0];
+      const index = Math.min(guideSections.length - 1, guideSections.indexOf(active) + 1);
+      activateGuideSection(guideSections[index]);
+    });
+  });
+  activateGuideSection(guideSections[0]);
 }
 
 async function loadLessons() {
@@ -89,12 +176,19 @@ async function loadCommands() {
     }),
   );
 
-  document.querySelectorAll(".data-source-card").forEach((card) => {
+  document.querySelectorAll(".data-source-card, .topology-command-card").forEach((card) => {
     const commandId = card.dataset.command;
     const label = commandLabels.get(commandId) || card.textContent.trim();
-    card.addEventListener("click", () => {
+    const openCommand = () => {
       activateView("terminal");
       runCommand(commandId, label);
+    };
+    card.addEventListener("click", openCommand);
+    card.addEventListener("keydown", (event) => {
+      if (event.key === "Enter" || event.key === " ") {
+        event.preventDefault();
+        openCommand();
+      }
     });
   });
 }
@@ -143,27 +237,72 @@ loadCommands().catch((error) => {
 });
 
 async function loadLabStatus() {
-  if (!labStatusStrip) {
+  if (!labStatusStrip && !statusDetailList) {
     return;
   }
 
   try {
     const { services } = await requestJson("/api/lab/status");
-    labStatusStrip.replaceChildren(
+    const healthyCount = services.filter((service) => service.status === "ok").length;
+    const unhealthyServices = services.filter((service) => service.status !== "ok");
+    const updated = new Date().toLocaleTimeString();
+    if (labStatusStrip) {
+      if (unhealthyServices.length === 0) {
+        labStatusStrip.replaceChildren();
+      } else {
+        const warning = document.createElement("span");
+        warning.className = "status-badge degraded";
+        warning.textContent = `Lab warning: ${unhealthyServices.length} container${unhealthyServices.length === 1 ? "" : "s"} need attention`;
+        warning.title = unhealthyServices.map((service) => `${service.name}: ${service.status}`).join(", ");
+        labStatusStrip.replaceChildren(warning);
+      }
+    }
+    if (statusSummaryText) {
+      statusSummaryText.textContent = `${healthyCount}/${services.length} services healthy`;
+    }
+    if (statusLastUpdated) {
+      statusLastUpdated.textContent = `Live · Updated ${updated}`;
+    }
+    statusDetailList?.replaceChildren(
       ...services.map((service) => {
-        const item = document.createElement("span");
-        item.className = `status-badge ${service.status}`;
-        item.textContent = `${service.name}: ${service.status}`;
-        item.title = service.latencyMs ? `${service.latencyMs}ms` : service.message || "";
+        const item = document.createElement("article");
+        item.className = `status-detail-card ${service.status}`;
+        const latency = service.latencyMs === null || service.latencyMs === undefined ? "n/a" : `${service.latencyMs}ms`;
+        const title = document.createElement("strong");
+        title.textContent = service.name;
+        const status = document.createElement("p");
+        status.textContent = `Status: ${service.status}`;
+        const details = document.createElement("small");
+        const container = service.containerStatus
+          ? `Container: ${service.containerStatus}${service.health ? ` (${service.health})` : ""}`
+          : "Container: n/a";
+        details.textContent = `${container} · HTTP: ${service.httpStatus || "n/a"} · Latency: ${latency}${service.message ? ` · ${service.message}` : ""}`;
+        item.append(title, status, details);
         return item;
       }),
     );
   } catch (error) {
     const item = document.createElement("span");
     item.className = "status-badge down";
-    item.textContent = "Status unavailable";
+    item.textContent = "Lab warning: status unavailable";
     item.title = error.message;
-    labStatusStrip.replaceChildren(item);
+    labStatusStrip?.replaceChildren(item);
+    if (statusSummaryText) {
+      statusSummaryText.textContent = "Status unavailable";
+    }
+    if (statusLastUpdated) {
+      statusLastUpdated.textContent = error.message;
+    }
+    if (statusDetailList) {
+      const item = document.createElement("article");
+      item.className = "status-detail-card down";
+      const title = document.createElement("strong");
+      title.textContent = "Status API";
+      const message = document.createElement("p");
+      message.textContent = error.message;
+      item.append(title, message);
+      statusDetailList.replaceChildren(item);
+    }
   }
 }
 
@@ -227,7 +366,11 @@ async function loadMcpExplorer() {
         const button = document.createElement("button");
         button.type = "button";
         button.className = "mcp-tool-item";
-        button.innerHTML = `<strong>${tool.name}</strong><small>${tool.description || ""}</small>`;
+        const name = document.createElement("strong");
+        name.textContent = tool.name;
+        const description = document.createElement("small");
+        description.textContent = tool.description || "";
+        button.append(name, description);
         button.addEventListener("click", () => {
           mcpToolList.querySelectorAll(".mcp-tool-item").forEach((item) => item.classList.remove("active"));
           button.classList.add("active");
@@ -270,6 +413,17 @@ document.querySelectorAll("[data-mcp-query]").forEach((button) => {
   });
 });
 
+document.querySelectorAll(".setup-tab").forEach((tab) => {
+  tab.addEventListener("click", () => {
+    document.querySelectorAll(".setup-tab").forEach((item) => item.classList.toggle("active", item === tab));
+    document.querySelectorAll(".setup-panel").forEach((panel) => {
+      panel.classList.toggle("active", panel.dataset.setupPanel === tab.dataset.setupTab);
+    });
+  });
+});
+
+initializeTheme();
+initializeGuideNavigation();
 loadLabStatus();
 const statusInterval = setInterval(loadLabStatus, 30_000);
 if (typeof statusInterval.unref === "function") {

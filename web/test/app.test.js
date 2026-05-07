@@ -132,8 +132,36 @@ test("browser app embeds Splunk panes on same-origin paths", async () => {
   assert.match(html, /src="\/splunk\/reset"/);
   assert.match(html, /src="\/deployment\/reset"/);
   assert.match(html, /src="\/heavy\/reset"/);
+  assert.match(html, /class="tab active" data-view="splunk"/);
+  assert.match(html, /class="workspace-frame active" id="view-splunk"/);
+  assert.match(html, /class="workspace-frame terminal" id="view-terminal"/);
   assert.doesNotMatch(html, /http:\/\/splunk\.localtest\.me:3000/);
   assert.doesNotMatch(html, /http:\/\/splunk\.localhost:3000/);
+});
+
+test("browser app exposes a guided journey shell and OS-aware theme picker", async () => {
+  const html = await readFile(path.join(publicDir, "index.html"), "utf-8");
+
+  assert.match(html, /<html lang="en" data-theme="system">/);
+  assert.match(html, /class="theme-picker"/);
+  assert.match(html, /<option value="system">System<\/option>/);
+  assert.match(html, /<option value="dark">Dark<\/option>/);
+  assert.match(html, /<option value="light">Light<\/option>/);
+  assert.match(html, /class="guide-nav"/);
+  assert.match(html, /Learning Journey/);
+  assert.match(html, /Log Into Splunk/);
+  assert.match(html, /Your Learn Splunk Journey/);
+  assert.match(html, /Step 1/);
+  assert.match(html, /Explore The Lab Topology/);
+  assert.match(html, /Explore Data/);
+  assert.match(html, /Create Dashboards/);
+  assert.match(html, /Use Tools \(MCP\)/);
+  assert.match(html, /Search The Lab's Indexes, Sources, And Sourcetypes/);
+  assert.match(html, /Turn Lab Searches Into Visual Panels/);
+  assert.match(html, /Lesson Modules/);
+  assert.match(html, /Coming Soon/);
+  assert.match(html, /Quizzes/);
+  assert.match(html, /Progress Checks/);
 });
 
 test("browser app uses Learn Splunk as the primary project name", async () => {
@@ -147,18 +175,15 @@ test("browser app uses Learn Splunk as the primary project name", async () => {
 test("browser app opens on a visual Splunk architecture landing page", async () => {
   const html = await readFile(path.join(publicDir, "index.html"), "utf-8");
 
-  assert.match(html, /class="architecture-pane"/);
+  assert.match(html, /class="architecture-pane guide-section"/);
   assert.match(html, /class="architecture-map"/);
-  assert.match(html, /class="cockpit-wrapper"/);
-  assert.match(html, /class="tips-panel"/);
-  assert.match(html, /class="mcp-panel"/);
+  assert.match(html, /class="tips-panel guide-section"/);
+  assert.match(html, /class="mcp-panel guide-section"/);
   assert.doesNotMatch(html, /id="view-architecture"/);
-  assert.match(html, /class="tab active" data-view="terminal"/);
-  assert.match(html, /class="workspace-frame terminal active" id="view-terminal"/);
   assert.match(html, /<pre id="command-output">Pick a command to run\.<\/pre>[\s\S]*<h2>Lab CLI<\/h2>/);
-  assert.match(html, /Splunk Platform Architecture/);
-  assert.match(html, /Lab Wrapper/);
-  assert.match(html, /wraps guided lessons, Splunk panes, Lab CLI, and the topology map/);
+  assert.doesNotMatch(html, /Forwarding Lab Topology/);
+  assert.doesNotMatch(html, /Lab Wrapper/);
+  assert.doesNotMatch(html, /wraps guided lessons, Splunk panes, Lab CLI, and the topology map/);
   assert.match(html, /sample-log-source/);
   assert.match(html, /Universal Forwarder/);
   assert.match(html, /Deployment Server/);
@@ -169,18 +194,18 @@ test("browser app opens on a visual Splunk architecture landing page", async () 
   assert.match(html, /class="nested-tier splunk-enterprise-tier"/);
   assert.match(html, /Splunk Enterprise/);
   assert.match(html, /Search Function/);
+  assert.match(html, /data-command="topologySearchHead"/);
   assert.match(html, /Search function configuration files/);
   assert.match(html, /Index Function/);
+  assert.match(html, /data-command="topologyIndexer"/);
   assert.match(html, /Index function configuration files/);
   assert.match(html, /class="nested-tier splunk-cloud-tier"/);
   assert.match(html, /Splunk Cloud Tier/);
   assert.match(html, /Optional Cloud Destination/);
+  assert.match(html, /data-command="topologySplunkCloud"/);
   assert.match(html, /Splunk Cloud/);
   assert.match(html, /HF can route selected inputs to Splunk Cloud using cloud-provided forwarding outputs/);
   assert.match(html, /Splunk Cloud forwarding configuration files/);
-  assert.match(html, /outputs.conf can route data to Enterprise, Cloud, or both/);
-  assert.match(html, /A single HF can route different inputs to different outputs/);
-  assert.match(html, /Separate HFs are optional/);
   assert.match(html, /Data Source Tier/);
   assert.match(html, /File Example/);
   assert.match(html, /TCP Example/);
@@ -254,11 +279,14 @@ test("browser app opens on a visual Splunk architecture landing page", async () 
   }
   assert.match(html, /Collection Tier/);
   assert.match(html, /Universal Forwarder Direct Path/);
+  assert.match(html, /data-command="topologyUfDirect"/);
   assert.match(html, /Direct universal forwarder configuration files/);
   assert.match(html, /Universal Forwarder Via HF Path/);
+  assert.match(html, /data-command="topologyUfViaHeavy"/);
   assert.match(html, /Via-heavy universal forwarder configuration files/);
   assert.match(html, /universal-forwarder-via-heavy/);
   assert.match(html, /Heavy Forwarder \/ Parsing/);
+  assert.match(html, /data-command="topologyHeavyForwarder"/);
   assert.match(html, /Heavy forwarder configuration files/);
   assert.match(html, /collects file\/TCP\/UDP inputs and forwards upstream/);
   assert.match(html, /collects file\/TCP\/UDP inputs and forwards to HF/);
@@ -268,7 +296,7 @@ test("browser app opens on a visual Splunk architecture landing page", async () 
   assert.match(html, /serverclass\.conf/);
   assert.match(html, /deploymentclient\.conf/);
   assert.match(html, /transforms\.conf/);
-  assert.match(html, /regex-based event rewrites/);
+  assert.match(html, /regex transforms/);
   assert.match(html, /UF forwards upstream/);
   assert.match(html, /UF forwards to HF/);
   assert.doesNotMatch(html, /file\/TCP\/UDP inputs → outputs to indexer/);
@@ -282,31 +310,38 @@ test("browser app opens on a visual Splunk architecture landing page", async () 
   assert.ok(collectionSection.indexOf("heavy-forwarder") < collectionSection.indexOf("universal-forwarder-via-heavy"));
   assert.match(html, /Management/);
   assert.ok(html.indexOf("Management") < html.indexOf("Search + Index Tier"));
-  assert.ok(html.indexOf("Lesson Cockpit") < html.indexOf("Search + Index Tier"));
   assert.ok(html.indexOf("Collection Tier") < html.indexOf("Data Source Tier"));
-  assert.ok(html.indexOf("Data Source Tier") < html.indexOf("Key Configuration Files"));
+  assert.ok(html.indexOf("Data Source Tier") < html.indexOf('id="section-forwarding-paths"'));
   assert.match(html, /inputs\.conf/);
-  assert.match(html, /Defines what Splunk reads or listens to/);
-  assert.match(html, /Applied on UFs for file, TCP, and UDP inputs/);
   assert.match(html, /outputs\.conf/);
-  assert.match(html, /Defines where a forwarder sends events next/);
-  assert.match(html, /Applied on the direct UF to send to the indexer/);
   assert.match(html, /props\.conf/);
-  assert.match(html, /Defines event parsing behavior/);
-  assert.match(html, /Applied where parsing occurs/);
+  assert.match(html, /Turn Lab Searches Into Visual Panels/);
+  assert.match(html, /Find A Question/);
+  assert.match(html, /Shape The SPL/);
+  assert.match(html, /Choose A Visualization/);
+  assert.match(html, /Save A Panel/);
+  assert.match(html, /Explain The Data/);
   assert.doesNotMatch(html, /Search Tier/);
   assert.doesNotMatch(html, /Indexing Tier/);
   assert.doesNotMatch(html, /src="\/reference\/splunk_arch\.png"/);
   assert.doesNotMatch(html, /src="\/reference\/splunk_dist\.png"/);
 });
 
-test("browser app places lessons below the two primary panes", async () => {
+test("browser app loads guide sections into one main window", async () => {
   const html = await readFile(path.join(publicDir, "index.html"), "utf-8");
 
-  assert.ok(html.indexOf('<aside class="architecture-pane">') < html.indexOf('<section class="workspace">'));
-  assert.ok(html.indexOf('<section class="workspace">') < html.indexOf('<section class="tips-panel"'));
-  assert.ok(html.indexOf('<section class="tips-panel"') < html.indexOf('<section class="mcp-panel"'));
-  assert.ok(html.indexOf('<section class="mcp-panel"') < html.indexOf('<section class="instructions">'));
+  assert.match(html, /class="overview-panel guide-section active"/);
+  assert.match(html, /class="architecture-pane guide-section"/);
+  assert.match(html, /class="data-source-panel guide-section"/);
+  assert.match(html, /class="workspace"/);
+  assert.doesNotMatch(html, /class="workspace guide-section"/);
+  assert.match(html, /class="tips-panel guide-section"/);
+  assert.match(html, /class="status-panel guide-section"/);
+  assert.match(html, /class="mcp-panel guide-section"/);
+  assert.match(html, /class="docs-panel guide-section"/);
+  assert.match(html, /class="instructions guide-section"/);
+  assert.match(html, /class="parsing-panel guide-section"/);
+  assert.match(html, /Search The Lab's Indexes, Sources, And Sourcetypes/);
   assert.match(html, /<header class="lesson-heading">/);
   assert.match(html, /<h1>Lesson Modules<\/h1>/);
   assert.match(html, /id="lesson-list" class="lesson-list module-row"/);
@@ -315,7 +350,12 @@ test("browser app places lessons below the two primary panes", async () => {
 test("browser app documents the Learn Splunk MCP integration", async () => {
   const html = await readFile(path.join(publicDir, "index.html"), "utf-8");
 
-  assert.match(html, /aria-label="MCP integration"/);
+  assert.match(html, /aria-label="MCP and Ask Splunk integration"/);
+  assert.match(html, /Ask Splunk With Safe Local Tools/);
+  assert.match(html, /What can I ask/);
+  assert.match(html, /Chat placeholder/);
+  assert.match(html, /MCP setup tabs/);
+  assert.match(html, /Claude Desktop/);
   assert.match(html, /learn-splunk/);
   assert.match(html, /http:\/\/localhost:8050\/mcp/);
   assert.match(html, /search_oneshot/);
@@ -330,6 +370,114 @@ test("browser app documents the Learn Splunk MCP integration", async () => {
   assert.match(html, /id="mcp-tool-list"/);
   assert.match(html, /id="mcp-tool-form"/);
   assert.match(html, /id="mcp-result"/);
+});
+
+test("browser app renders full lab status diagnostics", async () => {
+  const html = await readFile(path.join(publicDir, "index.html"), "utf-8");
+
+  assert.match(html, /class="status-panel guide-section"/);
+  assert.match(html, /Live Lab Diagnostics/);
+  assert.match(html, /id="status-summary-text"/);
+  assert.match(html, /id="status-last-updated"/);
+  assert.match(html, /id="status-detail-list"/);
+});
+
+test("browser app supports guide navigation and manual theme selection", async () => {
+  const html = await readFile(path.join(publicDir, "index.html"), "utf-8");
+  const dom = new JSDOM(html, {
+    url: "http://localhost:3000/",
+    runScripts: "outside-only",
+  });
+
+  globalThis.document = dom.window.document;
+  globalThis.window = dom.window;
+  globalThis.queueMicrotask = queueMicrotask;
+  globalThis.fetch = async (url) => {
+    if (url === "/api/lessons") {
+      return { ok: true, json: async () => ({ lessons: [] }) };
+    }
+    if (url === "/api/commands") {
+      return { ok: true, json: async () => ({ commands: [] }) };
+    }
+    if (url === "/api/lab/status") {
+      return { ok: true, json: async () => ({ services: [] }) };
+    }
+    if (url === "/api/mcp/tools") {
+      return { ok: true, json: async () => ({ tools: [] }) };
+    }
+    throw new Error(`Unexpected fetch URL: ${url}`);
+  };
+
+  await import(`${pathToFileURL(path.join(publicDir, "app.js")).href}?test=${Date.now()}`);
+
+  assert.equal(dom.window.document.querySelector("#section-start-here").classList.contains("active"), true);
+  assert.equal(dom.window.document.querySelector("#view-splunk").classList.contains("active"), true);
+  assert.equal(dom.window.document.querySelector('[data-view="splunk"]').classList.contains("active"), true);
+  assert.equal(dom.window.document.querySelector("#view-terminal").classList.contains("active"), false);
+
+  assert.equal(dom.window.document.documentElement.dataset.theme, "system");
+  const themeSelect = dom.window.document.querySelector("#theme-mode");
+  themeSelect.value = "dark";
+  themeSelect.dispatchEvent(new dom.window.Event("change"));
+  assert.equal(dom.window.document.documentElement.dataset.theme, "dark");
+  assert.equal(dom.window.localStorage.getItem("learn-splunk-theme"), "dark");
+
+  dom.window.document.querySelector('[data-section="lab-topology"].guide-nav-item').click();
+  assert.equal(dom.window.document.querySelector("#section-lab-topology").classList.contains("active"), true);
+  assert.equal(dom.window.document.querySelector("#view-terminal").classList.contains("active"), true);
+  assert.equal(dom.window.document.querySelector('[data-view="terminal"]').classList.contains("active"), true);
+  assert.equal(dom.window.document.querySelector("#view-splunk").classList.contains("active"), false);
+
+  dom.window.document.querySelector('[data-section="mcp-ask"].guide-nav-item').click();
+  assert.equal(
+    dom.window.document.querySelector('[data-section="mcp-ask"].guide-nav-item').classList.contains("active"),
+    true,
+  );
+  assert.equal(dom.window.document.querySelector("#section-mcp-ask").classList.contains("active"), true);
+  assert.equal(dom.window.document.querySelector("#section-start-here").classList.contains("active"), false);
+  assert.match(dom.window.document.querySelector("#guide-progress").textContent, /Step 5 of 9/);
+});
+
+test("browser app leaves the header status strip blank when all containers are ok", async () => {
+  const html = await readFile(path.join(publicDir, "index.html"), "utf-8");
+  const dom = new JSDOM(html, {
+    url: "http://localhost:3000/",
+    runScripts: "outside-only",
+  });
+
+  globalThis.document = dom.window.document;
+  globalThis.window = dom.window;
+  globalThis.queueMicrotask = queueMicrotask;
+  globalThis.fetch = async (url) => {
+    if (url === "/api/lessons") {
+      return { ok: true, json: async () => ({ lessons: [] }) };
+    }
+    if (url === "/api/commands") {
+      return { ok: true, json: async () => ({ commands: [] }) };
+    }
+    if (url === "/api/lab/status") {
+      return {
+        ok: true,
+        json: async () => ({
+          services: [
+            { name: "lesson-web", status: "ok", containerStatus: "Up 2 minutes" },
+            { name: "splunk-indexer", status: "ok", containerStatus: "Up 2 minutes" },
+          ],
+        }),
+      };
+    }
+    if (url === "/api/mcp/tools") {
+      return { ok: true, json: async () => ({ tools: [] }) };
+    }
+    throw new Error(`Unexpected fetch URL: ${url}`);
+  };
+
+  await import(`${pathToFileURL(path.join(publicDir, "app.js")).href}?test=${Date.now()}`);
+
+  await waitFor(() => {
+    assert.match(dom.window.document.querySelector("#status-summary-text").textContent, /2\/2 services healthy/);
+  });
+  assert.equal(dom.window.document.querySelector("#lab-status-strip").textContent, "");
 });
 
 test("browser app loads curated MCP tools and runs selected tool", async () => {
@@ -352,7 +500,37 @@ test("browser app loads curated MCP tools and runs selected tool", async () => {
       return { ok: true, json: async () => ({ commands: [] }) };
     }
     if (url === "/api/lab/status") {
-      return { ok: true, json: async () => ({ services: [{ name: "splunk-mcp", status: "ok" }] }) };
+      return {
+        ok: true,
+        json: async () => ({
+          services: [
+            {
+              name: "splunk-mcp",
+              status: "ok",
+              containerStatus: "Up 2 minutes",
+              state: "running",
+              httpStatus: 200,
+              latencyMs: 7,
+            },
+            {
+              name: "universal-forwarder",
+              status: "ok",
+              containerStatus: "Up 2 minutes",
+              state: "running",
+              httpStatus: null,
+              latencyMs: null,
+            },
+            {
+              name: "deployment-server",
+              status: "down",
+              containerStatus: "Exited (2) 1 minute ago",
+              state: "exited",
+              httpStatus: null,
+              latencyMs: null,
+            },
+          ],
+        }),
+      };
     }
     if (url === "/api/mcp/tools") {
       return {
@@ -383,6 +561,14 @@ test("browser app loads curated MCP tools and runs selected tool", async () => {
   await waitFor(() => {
     assert.match(dom.window.document.querySelector("#mcp-tool-list").textContent, /validate_spl/);
     assert.ok(dom.window.document.querySelector('[name="query"]'));
+    assert.match(dom.window.document.querySelector("#lab-status-strip").textContent, /Lab warning: 1 container need attention/);
+    assert.doesNotMatch(dom.window.document.querySelector("#lab-status-strip").textContent, /splunk-mcp: ok/);
+    assert.match(dom.window.document.querySelector("#lab-status-strip span").title, /deployment-server: down/);
+    assert.match(dom.window.document.querySelector("#status-summary-text").textContent, /2\/3 services healthy/);
+    assert.match(dom.window.document.querySelector("#status-detail-list").textContent, /splunk-mcp/);
+    assert.match(dom.window.document.querySelector("#status-detail-list").textContent, /universal-forwarder/);
+    assert.match(dom.window.document.querySelector("#status-detail-list").textContent, /deployment-server/);
+    assert.match(dom.window.document.querySelector("#status-detail-list").textContent, /Container: Up 2 minutes/);
   });
 
   dom.window.document.querySelector('[name="query"]').value = "index=lab_file | head 1";
@@ -394,7 +580,7 @@ test("browser app loads curated MCP tools and runs selected tool", async () => {
   assert.ok(calls.some((call) => call.url === "/api/mcp/tools/call" && call.options.method === "POST"));
 });
 
-test("browser app opens data source cards in the Lab CLI pane", async () => {
+test("browser app opens topology and data source cards in the Lab CLI pane", async () => {
   const html = await readFile(path.join(publicDir, "index.html"), "utf-8");
   const dom = new JSDOM(html, {
     url: "http://localhost:3000/",
@@ -425,7 +611,10 @@ test("browser app opens data source cards in the Lab CLI pane", async () => {
       return {
         ok: true,
         json: async () => ({
-          commands: [{ id: "dataSourceJson", label: "Data source: JSON file input config" }],
+          commands: [
+            { id: "dataSourceJson", label: "Data source: JSON file input config" },
+            { id: "topologyHeavyForwarder", label: "Topology function: Heavy Forwarder configs" },
+          ],
         }),
       };
     }
@@ -433,6 +622,12 @@ test("browser app opens data source cards in the Lab CLI pane", async () => {
       return {
         ok: true,
         json: async () => ({ ok: true, exitCode: 0, stdout: "JSON config", stderr: "" }),
+      };
+    }
+    if (url === "/api/commands/topologyHeavyForwarder") {
+      return {
+        ok: true,
+        json: async () => ({ ok: true, exitCode: 0, stdout: "Heavy Forwarder configs", stderr: "" }),
       };
     }
     throw new Error(`Unexpected fetch URL: ${url}`);
@@ -443,16 +638,34 @@ test("browser app opens data source cards in the Lab CLI pane", async () => {
   await waitFor(() => {
     assert.ok(dom.window.document.querySelector('[data-command="dataSourceJson"]'));
   });
+  dom.window.document.querySelector('[data-section="lab-topology"].guide-nav-item').click();
+  assert.equal(dom.window.document.querySelector("#section-lab-topology").classList.contains("active"), true);
 
   dom.window.document.querySelector('[data-command="dataSourceJson"]').click();
 
   await waitFor(() => {
+    assert.equal(dom.window.document.querySelector("#section-lab-topology").classList.contains("active"), true);
+    assert.equal(dom.window.document.querySelector("#section-data-sources").classList.contains("active"), false);
+    assert.equal(dom.window.document.querySelector(".workspace").classList.contains("active"), false);
     assert.equal(dom.window.document.querySelector("#view-terminal").classList.contains("active"), true);
     assert.equal(dom.window.document.querySelector('[data-view="terminal"]').classList.contains("active"), true);
     assert.match(dom.window.document.querySelector("#command-output").textContent, /JSON config/);
   });
   assert.ok(
     calls.some((call) => call.url === "/api/commands/dataSourceJson" && call.method === "POST"),
+  );
+
+  dom.window.document.querySelector('[data-command="topologyHeavyForwarder"]').dispatchEvent(
+    new dom.window.KeyboardEvent("keydown", { key: "Enter", bubbles: true }),
+  );
+
+  await waitFor(() => {
+    assert.equal(dom.window.document.querySelector("#section-lab-topology").classList.contains("active"), true);
+    assert.equal(dom.window.document.querySelector("#view-terminal").classList.contains("active"), true);
+    assert.match(dom.window.document.querySelector("#command-output").textContent, /Heavy Forwarder configs/);
+  });
+  assert.ok(
+    calls.some((call) => call.url === "/api/commands/topologyHeavyForwarder" && call.method === "POST"),
   );
 });
 
@@ -462,5 +675,5 @@ test("browser app shows lesson modules as a heading row in the lessons pane", as
   assert.match(html, /<header class="lesson-heading">/);
   assert.match(html, /<h1>Lesson Modules<\/h1>/);
   assert.match(html, /id="lesson-list" class="lesson-list module-row"/);
-  assert.match(html, /<section class="instructions">/);
+  assert.match(html, /<section class="instructions guide-section"/);
 });

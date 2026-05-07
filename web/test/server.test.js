@@ -201,6 +201,12 @@ test("command API exposes props.conf inspection commands", async (t) => {
     ),
   );
   for (const id of [
+    "topologySearchHead",
+    "topologyIndexer",
+    "topologySplunkCloud",
+    "topologyUfDirect",
+    "topologyHeavyForwarder",
+    "topologyUfViaHeavy",
     "dataSourceFile",
     "dataSourceTcp",
     "dataSourceUdp",
@@ -303,6 +309,23 @@ test("lab status API reports service reachability without Docker socket access",
     }
     return new Response("ok", { status: 200 });
   };
+  const fakeExecFile = (_cmd, args, _options, callback) => {
+    assert.deepEqual(args, ["compose", "ps", "--all", "--format", "json"]);
+    callback(
+      null,
+      JSON.stringify([
+        { Service: "lesson-web", Name: "learn-splunk-lesson-web-1", State: "running", Status: "Up 2 minutes" },
+        { Service: "splunk-mcp", Name: "learn-splunk-splunk-mcp-1", State: "running", Status: "Up 2 minutes" },
+        { Service: "splunk-indexer", Name: "learn-splunk-splunk-indexer-1", State: "running", Status: "Up 2 minutes", Health: "healthy" },
+        { Service: "deployment-server", Name: "learn-splunk-deployment-server-1", State: "exited", Status: "Exited (2) 1 minute ago" },
+        { Service: "heavy-forwarder", Name: "learn-splunk-heavy-forwarder-1", State: "running", Status: "Up 2 minutes" },
+        { Service: "universal-forwarder", Name: "learn-splunk-universal-forwarder-1", State: "running", Status: "Up 2 minutes" },
+        { Service: "universal-forwarder-via-heavy", Name: "learn-splunk-universal-forwarder-via-heavy-1", State: "running", Status: "Up 2 minutes" },
+        { Service: "sample-log-source", Name: "learn-splunk-sample-log-source-1", State: "running", Status: "Up 2 minutes" },
+      ]),
+      "",
+    );
+  };
 
   const server = http.createServer(
     createApp({
@@ -314,6 +337,7 @@ test("lab status API reports service reachability without Docker socket access",
       splunkTarget: "http://splunk-indexer:8000/en-US/account/login",
       deploymentTarget: "http://down-service:8000/en-US/account/login",
       heavyTarget: "http://heavy-forwarder:8000/en-US/account/login",
+      execFile: fakeExecFile,
     }),
   );
   t.after(() => server.close());
@@ -321,9 +345,13 @@ test("lab status API reports service reachability without Docker socket access",
 
   const { response, body } = await fetchJson(`http://127.0.0.1:${port}/api/lab/status`);
   assert.equal(response.status, 200);
+  assert.equal(body.source, "docker-compose");
   assert.ok(body.services.some((service) => service.name === "lesson-web" && service.status === "ok"));
   assert.ok(body.services.some((service) => service.name === "splunk-mcp" && service.status === "ok"));
-  assert.ok(body.services.some((service) => service.name === "deployment" && service.status === "down"));
+  assert.ok(body.services.some((service) => service.name === "deployment-server" && service.status === "down"));
+  assert.ok(body.services.some((service) => service.name === "universal-forwarder" && service.status === "ok"));
+  assert.ok(body.services.some((service) => service.name === "sample-log-source" && service.status === "ok"));
+  assert.ok(body.services.every((service) => service.type === "container"));
 });
 
 test("host-based Splunk proxy runs before lesson static assets", async (t) => {

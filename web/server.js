@@ -19,6 +19,7 @@ export function createApp(options = {}) {
   const mcpUrl = options.mcpUrl || process.env.MCP_URL || "http://splunk-mcp:8050/mcp";
   const mcpHealthUrl = options.mcpHealthUrl || process.env.MCP_HEALTH_URL || "http://splunk-mcp:8050/healthz";
   const request = options.fetch || globalThis.fetch;
+  const runProcess = options.execFile || execFile;
 
   function parseSseMessage(text) {
     const dataLine = text
@@ -91,6 +92,76 @@ export function createApp(options = {}) {
         latencyMs: null,
       };
     }
+  }
+
+  function parseComposePs(stdout) {
+    const trimmed = stdout.trim();
+    if (!trimmed) {
+      return [];
+    }
+    try {
+      const parsed = JSON.parse(trimmed);
+      return Array.isArray(parsed) ? parsed : [parsed];
+    } catch (_error) {
+      return trimmed
+        .split("\n")
+        .filter(Boolean)
+        .map((line) => JSON.parse(line));
+    }
+  }
+
+  function normalizeContainerStatus(container) {
+    const serviceName = container.Service || container.Name || "unknown";
+    const state = String(container.State || "").toLowerCase();
+    const health = String(container.Health || "").toLowerCase();
+    const statusText = container.Status || state || "unknown";
+    let status = "degraded";
+    if (state === "running" && (!health || health === "healthy")) {
+      status = "ok";
+    } else if (["exited", "dead", "removing"].includes(state) || health === "unhealthy") {
+      status = "down";
+    }
+    return {
+      name: serviceName,
+      status,
+      type: "container",
+      containerName: container.Name || serviceName,
+      containerStatus: statusText,
+      state: container.State || "unknown",
+      health: container.Health || "",
+      ports: container.Publishers || container.Ports || "",
+      httpStatus: null,
+      latencyMs: null,
+    };
+  }
+
+  function getComposeContainerStatuses() {
+    return new Promise((resolve) => {
+      runProcess(
+        "docker",
+        ["compose", "ps", "--all", "--format", "json"],
+        {
+          cwd: labRoot,
+          timeout: 30_000,
+          maxBuffer: 1024 * 1024,
+          env: { ...process.env, COMPOSE_PROJECT_NAME: process.env.COMPOSE_PROJECT_NAME || "learn-splunk" },
+        },
+        (error, stdout, stderr) => {
+          if (error) {
+            resolve({
+              services: [],
+              error: (stderr || error.message || "docker compose ps failed").trim(),
+            });
+            return;
+          }
+          try {
+            resolve({ services: parseComposePs(stdout).map(normalizeContainerStatus) });
+          } catch (parseError) {
+            resolve({ services: [], error: parseError.message });
+          }
+        },
+      );
+    });
   }
 
   function rewriteCookiePath(cookie, prefix) {
@@ -426,6 +497,36 @@ export function createApp(options = {}) {
         "--debug",
       ],
     },
+    topologySearchHead: {
+      label: "Topology function: Search Head configs",
+      cmd: "python3",
+      args: ["scripts/show_topology_function.py", "search-head"],
+    },
+    topologyIndexer: {
+      label: "Topology function: Indexer configs",
+      cmd: "python3",
+      args: ["scripts/show_topology_function.py", "indexer"],
+    },
+    topologySplunkCloud: {
+      label: "Topology function: Splunk Cloud forwarding configs",
+      cmd: "python3",
+      args: ["scripts/show_topology_function.py", "splunk-cloud"],
+    },
+    topologyUfDirect: {
+      label: "Topology function: Direct UF configs",
+      cmd: "python3",
+      args: ["scripts/show_topology_function.py", "uf-direct"],
+    },
+    topologyHeavyForwarder: {
+      label: "Topology function: Heavy Forwarder configs",
+      cmd: "python3",
+      args: ["scripts/show_topology_function.py", "heavy-forwarder"],
+    },
+    topologyUfViaHeavy: {
+      label: "Topology function: Via-HF UF configs",
+      cmd: "python3",
+      args: ["scripts/show_topology_function.py", "uf-via-heavy"],
+    },
     dataSourceFile: {
       label: "Data source: file monitor config",
       cmd: "python3",
@@ -487,7 +588,7 @@ export function createApp(options = {}) {
 
   function runLabCommand(definition) {
     return new Promise((resolve) => {
-      execFile(
+      runProcess(
         definition.cmd,
         definition.args,
         {
@@ -603,17 +704,36 @@ export function createApp(options = {}) {
   });
 
   app.get("/api/lab/status", async (_req, res) => {
-    const services = await Promise.all([
-      Promise.resolve({ name: "lesson-web", status: "ok", httpStatus: 200, latencyMs: 0 }),
-      checkHttpService("splunk-mcp", mcpHealthUrl),
-      checkHttpService("indexer", options.splunkTarget || "http://splunk-indexer:8000/en-US/account/login"),
-      checkHttpService(
-        "deployment",
-        options.deploymentTarget || "http://deployment-server:8000/en-US/account/login",
-      ),
-      checkHttpService("heavy", options.heavyTarget || "http://heavy-forwarder:8000/en-US/account/login"),
+    const [composeStatus, httpChecks] = await Promise.all([
+      getComposeContainerStatuses(),
+      Promise.all([
+        Promise.resolve({ name: "lesson-web", status: "ok", httpStatus: 200, latencyMs: 0 }),
+        checkHttpService("splunk-mcp", mcpHealthUrl),
+        checkHttpService("splunk-indexer", options.splunkTarget || "http://splunk-indexer:8000/en-US/account/login"),
+        checkHttpService(
+          "deployment-server",
+          options.deploymentTarget || "http://deployment-server:8000/en-US/account/login",
+        ),
+        checkHttpService("heavy-forwarder", options.heavyTarget || "http://heavy-forwarder:8000/en-US/account/login"),
+      ]),
     ]);
-    res.json({ services });
+    const httpByName = new Map(httpChecks.map((service) => [service.name, service]));
+    const services = composeStatus.services.length
+      ? composeStatus.services.map((service) => {
+          const http = httpByName.get(service.name);
+          if (!http) {
+            return service;
+          }
+          return {
+            ...service,
+            status: service.status === "ok" && http.status !== "ok" ? "degraded" : service.status,
+            httpStatus: http.httpStatus,
+            latencyMs: http.latencyMs,
+            message: http.message,
+          };
+        })
+      : httpChecks;
+    res.json({ services, source: composeStatus.services.length ? "docker-compose" : "http", error: composeStatus.error });
   });
 
   app.post("/api/commands/:id", async (req, res) => {
