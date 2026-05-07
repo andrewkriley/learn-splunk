@@ -149,6 +149,7 @@ test("browser app exposes a guided journey shell and OS-aware theme picker", asy
   assert.match(html, /<option value="light">Light<\/option>/);
   assert.match(html, /class="guide-nav"/);
   assert.match(html, /Learning Journey/);
+  assert.match(html, /<span class="step-num">1<\/span><span>Start Here<\/span>/);
   assert.match(html, /Log Into Splunk/);
   assert.match(html, /Your Learn Splunk Journey/);
   assert.match(html, /Step 1/);
