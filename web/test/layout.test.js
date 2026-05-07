@@ -35,9 +35,14 @@ test("cockpit CSS supports Splunk-lab colors and theme modes", async () => {
   assert.match(css, /--splunk-coral:\s*#f16221/);
   assert.match(css, /--splunk-pink:\s*#eb008b/);
   assert.match(css, /--splunk-aqua:\s*#00a9e0/);
+  assert.match(css, /--topology-search-bg:/);
+  assert.match(css, /--topology-collection-bg:/);
+  assert.match(css, /--topology-node-bg:/);
+  assert.match(css, /--topology-pill-bg:/);
   assert.match(css, /:root\[data-theme="dark"\]/);
   assert.match(css, /:root\[data-theme="light"\]/);
   assert.match(css, /prefers-color-scheme:\s*dark/);
+  assert.match(css, /:root\[data-theme="system"\][\s\S]*--topology-search-bg:/);
   assert.match(css, /\.theme-picker/);
 });
 
@@ -136,8 +141,11 @@ test("cockpit CSS shows architecture beside workspace with side-by-side manageme
   assert.match(css, /\.architecture-map\s*\{[\s\S]*height:\s*100%/);
   assert.match(css, /\.architecture-map\s*\{[\s\S]*overflow:\s*hidden/);
   assert.match(css, /\.architecture-pane\.active\s*\{[\s\S]*overflow:\s*hidden/);
-  assert.match(css, /\.vertical-flow,[\s\S]*\.management-link\s*\{[\s\S]*background:\s*rgba\(255, 255, 255, 0\.86\)/);
-  assert.match(css, /:root\[data-theme="dark"\] \.vertical-flow,[\s\S]*\.path-arrow\s*\{[\s\S]*background:\s*rgba\(17, 25, 40, 0\.92\)/);
+  assert.match(css, /\.search-index-tier\s*\{[\s\S]*background:\s*var\(--topology-search-bg\)/);
+  assert.match(css, /\.collection-tier\s*\{[\s\S]*background:\s*var\(--topology-collection-bg\)/);
+  assert.match(css, /\.node\s*\{[\s\S]*background:\s*var\(--topology-node-bg\)/);
+  assert.match(css, /\.vertical-flow,[\s\S]*\.management-link\s*\{[\s\S]*background:\s*var\(--topology-pill-bg\)/);
+  assert.match(css, /\.path-arrow\s*\{[\s\S]*background:\s*var\(--topology-pill-bg\)/);
   assert.match(css, /\.tips-panel\s*\{[\s\S]*overflow:\s*auto/);
   assert.match(css, /\.tip-list\s*\{[\s\S]*grid-template-columns:\s*repeat\(5, minmax\(0, 1fr\)\)/);
 });

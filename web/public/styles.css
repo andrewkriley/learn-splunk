@@ -21,6 +21,26 @@
   --warning: #c77700;
   --danger: #c01048;
   --purple: #7755d4;
+  --topology-text: #142033;
+  --topology-muted: #344054;
+  --topology-node-bg: rgba(255, 255, 255, 0.92);
+  --topology-node-hover: rgba(236, 253, 243, 0.96);
+  --topology-config-bg: rgba(248, 250, 252, 0.94);
+  --topology-config-border: #d9e2ef;
+  --topology-search-bg: rgba(101, 166, 55, 0.16);
+  --topology-search-border: rgba(101, 166, 55, 0.56);
+  --topology-collection-bg: rgba(241, 98, 34, 0.12);
+  --topology-collection-border: rgba(204, 129, 60, 0.62);
+  --topology-source-bg: rgba(0, 169, 224, 0.1);
+  --topology-source-border: rgba(0, 169, 224, 0.4);
+  --topology-management-bg: rgba(119, 85, 212, 0.12);
+  --topology-management-border: rgba(119, 85, 212, 0.48);
+  --topology-cloud-bg: rgba(0, 169, 224, 0.14);
+  --topology-cloud-border: rgba(0, 169, 224, 0.56);
+  --topology-enterprise-bg: rgba(255, 255, 255, 0.55);
+  --topology-pill-bg: rgba(255, 255, 255, 0.84);
+  --topology-pill-border: rgba(52, 64, 84, 0.2);
+  --topology-path-text: #664400;
   --brand-gradient: linear-gradient(90deg, var(--splunk-green) 0%, var(--splunk-pink) 45%, var(--splunk-coral) 100%);
 }
 
@@ -39,6 +59,26 @@
   --warning: #f59e0b;
   --danger: #ef4444;
   --purple: #a78bfa;
+  --topology-text: #f0f3f7;
+  --topology-muted: #c0cfe2;
+  --topology-node-bg: rgba(18, 31, 48, 0.92);
+  --topology-node-hover: rgba(21, 53, 45, 0.94);
+  --topology-config-bg: rgba(8, 15, 24, 0.72);
+  --topology-config-border: rgba(192, 207, 226, 0.16);
+  --topology-search-bg: rgba(123, 193, 66, 0.14);
+  --topology-search-border: rgba(123, 193, 66, 0.5);
+  --topology-collection-bg: rgba(241, 98, 34, 0.12);
+  --topology-collection-border: rgba(245, 158, 11, 0.48);
+  --topology-source-bg: rgba(0, 169, 224, 0.12);
+  --topology-source-border: rgba(0, 169, 224, 0.48);
+  --topology-management-bg: rgba(167, 139, 250, 0.12);
+  --topology-management-border: rgba(167, 139, 250, 0.52);
+  --topology-cloud-bg: rgba(0, 169, 224, 0.16);
+  --topology-cloud-border: rgba(0, 169, 224, 0.56);
+  --topology-enterprise-bg: rgba(255, 255, 255, 0.06);
+  --topology-pill-bg: rgba(17, 25, 40, 0.92);
+  --topology-pill-border: rgba(229, 231, 235, 0.22);
+  --topology-path-text: var(--text);
 }
 
 :root[data-theme="light"] {
@@ -61,6 +101,26 @@
     --warning: #f59e0b;
     --danger: #ef4444;
     --purple: #a78bfa;
+    --topology-text: #f0f3f7;
+    --topology-muted: #c0cfe2;
+    --topology-node-bg: rgba(18, 31, 48, 0.92);
+    --topology-node-hover: rgba(21, 53, 45, 0.94);
+    --topology-config-bg: rgba(8, 15, 24, 0.72);
+    --topology-config-border: rgba(192, 207, 226, 0.16);
+    --topology-search-bg: rgba(123, 193, 66, 0.14);
+    --topology-search-border: rgba(123, 193, 66, 0.5);
+    --topology-collection-bg: rgba(241, 98, 34, 0.12);
+    --topology-collection-border: rgba(245, 158, 11, 0.48);
+    --topology-source-bg: rgba(0, 169, 224, 0.12);
+    --topology-source-border: rgba(0, 169, 224, 0.48);
+    --topology-management-bg: rgba(167, 139, 250, 0.12);
+    --topology-management-border: rgba(167, 139, 250, 0.52);
+    --topology-cloud-bg: rgba(0, 169, 224, 0.16);
+    --topology-cloud-border: rgba(0, 169, 224, 0.56);
+    --topology-enterprise-bg: rgba(255, 255, 255, 0.06);
+    --topology-pill-bg: rgba(17, 25, 40, 0.92);
+    --topology-pill-border: rgba(229, 231, 235, 0.22);
+    --topology-path-text: var(--text);
   }
 }
 
@@ -400,7 +460,7 @@ button.active {
 
 .architecture-diagram {
   align-items: stretch;
-  color: #142033;
+  color: var(--topology-text);
   display: grid;
   flex: 1 1 auto;
   gap: 0.35rem;
@@ -430,20 +490,20 @@ button.active {
 
 .tier h3,
 .management-column h3 {
-  color: #142033;
+  color: var(--topology-text);
   font-size: 0.76rem;
   margin: 0 0 0.25rem;
 }
 
 .nested-tier h4 {
-  color: #142033;
+  color: var(--topology-text);
   font-size: 0.66rem;
   margin: 0 0 0.22rem;
 }
 
 .search-index-tier {
-  background: #edf8dd;
-  border-color: #91c96b;
+  background: var(--topology-search-bg);
+  border-color: var(--topology-search-border);
 }
 
 .destination-tiers {
@@ -454,7 +514,7 @@ button.active {
 }
 
 .nested-tier {
-  border: 1px solid rgba(16, 24, 40, 0.16);
+  border: 1px solid var(--topology-pill-border);
   border-radius: 8px;
   min-height: 0;
   overflow: hidden;
@@ -462,27 +522,27 @@ button.active {
 }
 
 .splunk-enterprise-tier {
-  background: rgba(255, 255, 255, 0.68);
+  background: var(--topology-enterprise-bg);
 }
 
 .splunk-cloud-tier {
-  background: #e7f5ff;
-  border-color: #00a4fd;
+  background: var(--topology-cloud-bg);
+  border-color: var(--topology-cloud-border);
 }
 
 .collection-tier {
-  background: #fff0dc;
-  border-color: #cc813c;
+  background: var(--topology-collection-bg);
+  border-color: var(--topology-collection-border);
 }
 
 .data-source-tier {
-  background: #f4f7fb;
-  border-color: #98a2b3;
+  background: var(--topology-source-bg);
+  border-color: var(--topology-source-border);
 }
 
 .management-column {
-  background: #f0e6ff;
-  border-color: var(--purple);
+  background: var(--topology-management-bg);
+  border-color: var(--topology-management-border);
   display: flex;
   flex-direction: column;
   gap: 0.3rem;
@@ -501,7 +561,7 @@ button.active {
 }
 
 .cloud-destination {
-  border-color: #00a4fd;
+  border-color: var(--topology-cloud-border);
 }
 
 .source-examples {
@@ -517,10 +577,10 @@ button.active {
 
 .node {
   align-self: center;
-  background: #ffffff;
+  background: var(--topology-node-bg);
   border: 1px solid var(--border);
   border-radius: 8px;
-  color: #142033;
+  color: var(--topology-text);
   box-shadow: 0 4px 12px rgba(20, 32, 51, 0.08);
   font: inherit;
   line-height: 1.15;
@@ -544,15 +604,15 @@ button.active {
 }
 
 .node small {
-  color: #344054;
+  color: var(--topology-muted);
   font-size: 0.62rem;
 }
 
 .config-list {
-  background: #f9fafb;
-  border: 1px solid #e4e7ec;
+  background: var(--topology-config-bg);
+  border: 1px solid var(--topology-config-border);
   border-radius: 6px;
-  color: #344054;
+  color: var(--topology-muted);
   font-size: 0.5rem;
   line-height: 1.12;
   margin: 0.18rem 0 0;
@@ -564,10 +624,10 @@ button.active {
 }
 
 .source-meta {
-  background: #f8fafc;
-  border: 1px solid #e4e7ec;
+  background: var(--topology-config-bg);
+  border: 1px solid var(--topology-config-border);
   border-radius: 5px;
-  color: #344054;
+  color: var(--topology-muted);
   font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
   font-size: 0.47rem;
   margin-top: 0.12rem;
@@ -602,7 +662,7 @@ button.active {
 .data-source-card:focus,
 .topology-command-card:hover,
 .topology-command-card:focus {
-  background: #f2fbf6;
+  background: var(--topology-node-hover);
   border-color: var(--success);
   outline: 2px solid rgba(24, 153, 91, 0.26);
   outline-offset: 1px;
@@ -632,20 +692,20 @@ button.active {
 }
 
 .hf {
-  border-color: #b7791f;
+  border-color: var(--topology-collection-border);
 }
 
 .search-head {
-  border-color: #7ab857;
+  border-color: var(--topology-search-border);
 }
 
 .vertical-flow,
 .collection-arrow,
 .management-link {
-  background: rgba(255, 255, 255, 0.86);
-  border: 1px solid rgba(52, 64, 84, 0.18);
+  background: var(--topology-pill-bg);
+  border: 1px solid var(--topology-pill-border);
   border-radius: 999px;
-  color: #142033;
+  color: var(--topology-text);
   font-size: 0.58rem;
   font-weight: 700;
   line-height: 1.15;
@@ -668,15 +728,15 @@ button.active {
 }
 
 .direct-path {
-  border-right: 1px dashed #cc813c;
+  border-right: 1px dashed var(--topology-collection-border);
   padding-right: 0.28rem;
 }
 
 .path-arrow {
-  background: rgba(255, 255, 255, 0.86);
-  border: 1px solid rgba(102, 68, 0, 0.18);
+  background: var(--topology-pill-bg);
+  border: 1px solid var(--topology-pill-border);
   border-radius: 999px;
-  color: #664400;
+  color: var(--topology-path-text);
   font-size: 0.52rem;
   font-weight: 700;
   line-height: 1.15;
@@ -1306,7 +1366,6 @@ iframe {
 :root[data-theme="dark"] .management-column,
 :root[data-theme="dark"] .splunk-cloud-tier,
 :root[data-theme="dark"] .splunk-enterprise-tier {
-  background: rgba(255, 255, 255, 0.08);
   color: var(--text);
 }
 
@@ -1330,15 +1389,11 @@ iframe {
 :root[data-theme="dark"] .collection-arrow,
 :root[data-theme="dark"] .management-link,
 :root[data-theme="dark"] .path-arrow {
-  background: rgba(17, 25, 40, 0.92);
-  border-color: rgba(229, 231, 235, 0.24);
   box-shadow: 0 0 0 1px rgba(15, 118, 110, 0.08);
 }
 
 :root[data-theme="dark"] .config-list,
 :root[data-theme="dark"] .source-meta {
-  background: var(--code-bg);
-  border-color: var(--border);
   color: var(--muted);
 }
 
